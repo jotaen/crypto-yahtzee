@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "json-stable-stringify": "^1.0.1",
+    "redux": "^4.0.5"
+  },
+  "devDependencies": {
+    "mocha": "^7.1.1"
+  }
+}
