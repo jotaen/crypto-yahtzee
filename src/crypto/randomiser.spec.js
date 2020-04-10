@@ -122,7 +122,7 @@ describe("[Randomiser] Generation", () => {
 			"b736994617eb6d9a573342120f383686447dad1688fb25838dc674ca29b83687"
 		])
 		s.submitValues("BOB", ["7d6d2b55", "bc0150fb"])
-		assert.deepStrictEqual(s.retrieveNumber(), [373347153, -1099927788])
+		assert.deepStrictEqual(s.retrieveNumbers(), [373347153, -1099927788])
 	})
 })
 

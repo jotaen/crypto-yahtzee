@@ -52,7 +52,7 @@ class ConcertedRandomiser {
 		this._submit("values", isHexString(VALUE_STRING_LENGTH), participant, values)
 	}
 
-	retrieveNumber() {
+	retrieveNumbers() {
 		const allValues = Object.values(this._entries)
 			.map(e => e.values)
 
