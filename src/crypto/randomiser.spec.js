@@ -139,3 +139,32 @@ describe("[Randomiser] random()", () => {
 		assert.notDeepStrictEqual(random(), random())
 	})
 })
+
+describe.skip("[Randomiser] Integration test", () => {
+	//
+	//	Test to check the distribution of resulting values
+	//  Leave skipped, because it’s slow
+	//
+
+	const { dice } = require("./hash")
+
+	it("distributes the value evenly across the spectrum", () => {
+		const result = {}
+		for (let i=0; i<9999; i++) {
+			const participants = ["ALICE", "BOB"]
+			const cr = new ConcertedRandomiser(1, participants)
+			participants
+				.map((p) => ({ p: p, r: random() }))
+				.forEach(x => {
+					cr.submitHashes(x.p, [x.r.hash])
+					cr.submitValues(x.p, [x.r.value])
+				})
+			const x = dice(cr.retrieveNumbers()[0])
+			if (! (x in result)) {
+				result[x] = 0
+			}
+			result[x] = result[x] + 1
+		}
+		console.log(result)
+	})
+})

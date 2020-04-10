@@ -7,4 +7,4 @@ module.exports.hash = data => {
 	return sha256(message).toString()
 }
 
-module.exports.dice = int => Math.abs(int) % 6 + 1
+module.exports.dice = int => Math.abs(int % 6) + 1
