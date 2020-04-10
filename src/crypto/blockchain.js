@@ -1,4 +1,4 @@
-const { sign, hash, random } = require("./cryptoFunctions")
+const { sign, hash } = require("./cryptoFunctions")
 
 const freeze = block => Object.freeze({
 	...block,
@@ -50,14 +50,14 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain
 
-module.exports.createNew = (keyPair, otherPublicKeys) => {
+module.exports.createNew = (guid, keyPair, otherPublicKeys) => {
 	const participants = [keyPair.public, ...otherPublicKeys].reduce((a, c) => {
 		a[hash(c)] = c
 		return a
 	}, {})
 	return new Blockchain(keyPair, {
 		precedingBlock: null,
-		guid: hash(random(64)),
+		guid: hash(guid),
 		protocolVersion: 0,
 		participants: participants,
 	})

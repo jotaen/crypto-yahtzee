@@ -19,7 +19,3 @@ module.exports.hash = (data) => {
 	const message = isComplex ? stringify(data) : data
 	return sha256(message).toString()
 }
-
-module.exports.random = (byteSize) => {
-	return crypto.randomBytes(byteSize)
-}
