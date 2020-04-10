@@ -1,6 +1,6 @@
 const assert = require("assert")
 const Blockchain = require("./blockchain")
-const { ALICE, BOB } = require("./rsaTestUtil")
+const { ALICE, BOB } = require("./testdata.json")
 
 describe("[Blockchain] Creation", () => {
 	it("stores basic info in initial block", () => {

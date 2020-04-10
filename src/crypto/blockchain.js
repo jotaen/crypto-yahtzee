@@ -1,4 +1,4 @@
-const { sign, hash } = require("./cryptoFunctions")
+const { hash } = require("./hash")
 
 const freeze = block => Object.freeze({
 	...block,
@@ -35,7 +35,7 @@ class Blockchain {
 			actor: hash(this._publicKey),
 			payload: payload,
 		}
-		// block.signature = sign(this._privateKey, block)
+		// TODO sign
 		this._stagedBlock = freeze(block)
 	}
 
