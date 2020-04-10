@@ -16,5 +16,5 @@ module.exports.sign = (privateKey, data) => {
 module.exports.hash = (data) => {
 	const isComplex = (typeof data === "object" || typeof data === "array")
 	const message = isComplex ? stringify(data) : data
-	return sha256(message)
+	return sha256(message).toString()
 }
