@@ -1,4 +1,4 @@
-const { sign, hash } = require("./crypto")
+const { sign, hash, random } = require("./crypto")
 
 const freeze = block => Object.freeze({
 	...block,
@@ -21,8 +21,12 @@ class Blockchain {
 		this._stagedBlock = null
 	}
 
-	// stageForeignBlock(state, block) {
-	// }
+	stageForeignBlock(state, block) {
+		if (block.precedingBlock !== hash(this.latestBlock())) {
+			throw "INCOMPATIBLE_BLOCK"
+		}
+		this._stagedBlock = block
+	}
 
 	stageOwnBlock(state, payload) {
 		const block = {
@@ -53,11 +57,12 @@ module.exports.createNew = (keyPair, otherPublicKeys) => {
 	}, {})
 	return new Blockchain(keyPair, {
 		precedingBlock: null,
+		guid: hash(random(64)),
 		protocolVersion: 0,
 		participants: participants,
 	})
 }
 
-module.exports.createFromRoot = (keyPair, rootBlock) => {
+module.exports.createWithRoot = (keyPair, rootBlock) => {
 	return new Blockchain(keyPair, rootBlock)
 }
