@@ -1,9 +1,9 @@
 const assert = require("assert")
-const { createState, roll, record } = require("./yahtzee")
+const { createGame, roll, record } = require("./game")
 
 describe("[Yahtzee] Initialisation", () => {
 	it("creates empty default state", () => {
-		const s = createState(3)
+		const s = createGame(3)
 		assert.deepStrictEqual(s, {
 			onTurn: 0,
 			roll: 0,
@@ -25,14 +25,14 @@ describe("[Yahtzee] Initialisation", () => {
 
 describe("[Yahtzee] Rolling", () => {
 	it("commits roll of player", () => {
-		const s1 = createState(2)
+		const s1 = createGame(2)
 		const s2 = roll(s1, { dices: [2, 4, 1, 5, 6] })
 		assert.strictEqual(s2.roll, 1)
 		assert.deepStrictEqual(s2.dices, [2, 4, 1, 5, 6])
 	})
 
 	it("accepts not more than 3 rolls", () => {
-		const s1 = createState(2)
+		const s1 = createGame(2)
 		const s2 = roll(s1, { dices: [2, 4, 1, 5, 6] })
 		const s3 = roll(s2, { dices: [2, 4, 1, 5, 6] })
 		const s4 = roll(s3, { dices: [2, 4, 1, 5, 6] })
@@ -43,7 +43,7 @@ describe("[Yahtzee] Rolling", () => {
 	})
 
 	it("rejects invalid dices", () => {
-		const s = createState(2)
+		const s = createGame(2)
 		assert.throws(
 			() => roll(s, { dices: [] }), // none
 			e => e === "INVALID_DICES"
@@ -69,21 +69,21 @@ describe("[Yahtzee] Rolling", () => {
 
 describe("[Yahtzee] Scoring", () => {
 	it("scores dices", () => {
-		const s1 = createState(2)
+		const s1 = createGame(2)
 		const s2 = roll(s1, { dices: [2, 5, 3, 2, 2] })
 		const s3 = record(s2, { category: "twos" })
 		assert.strictEqual(s3.scorecards[0].twos, 6)
 	})
 
 	it("can cross out", () => {
-		const s1 = createState(2)
+		const s1 = createGame(2)
 		const s2 = roll(s1, { dices: [2, 5, 3, 2, 2] })
 		const s3 = record(s2, { category: "yahtzee" })
 		assert.strictEqual(s3.scorecards[0].yahtzee, 0)
 	})
 
 	it("cannot overwrite existing scores", () => {
-		const s1 = createState(3)
+		const s1 = createGame(3)
 		s1.scorecards[s1.onTurn].threeOfAKind = 21
 		const s2 = roll(s1, { dices: [2, 4, 4, 4, 1] })
 		assert.throws(

@@ -2,7 +2,7 @@ const { createScorecard, count } = require("./scorecard")
 
 const deepClone = obj => JSON.parse(JSON.stringify(obj))
 
-module.exports.createState = (numberOfPlayers) => ({
+module.exports.createGame = (numberOfPlayers) => ({
 	onTurn: 0,
 	roll: 0,
 	dices: null,
