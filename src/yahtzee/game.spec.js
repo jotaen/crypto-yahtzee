@@ -1,7 +1,12 @@
 const assert = require("assert")
 const { createGame, roll, record } = require("./game")
 
-describe("[Yahtzee] Initialisation", () => {
+const flow = game => ({
+	then: fn => flow(fn(game)),
+	peak: fn => { fn(game); return flow(game); }
+})
+
+describe("[Game] Initialisation", () => {
 	it("creates empty default state", () => {
 		const s = createGame(3)
 		assert.deepStrictEqual(s, {
@@ -23,23 +28,14 @@ describe("[Yahtzee] Initialisation", () => {
 	})
 })
 
-describe("[Yahtzee] Rolling", () => {
+describe("[Game] Rolling", () => {
 	it("commits roll of player", () => {
-		const s1 = createGame(2)
-		const s2 = roll(s1, { dices: [2, 4, 1, 5, 6] })
-		assert.strictEqual(s2.roll, 1)
-		assert.deepStrictEqual(s2.dices, [2, 4, 1, 5, 6])
-	})
-
-	it("accepts not more than 3 rolls", () => {
-		const s1 = createGame(2)
-		const s2 = roll(s1, { dices: [2, 4, 1, 5, 6] })
-		const s3 = roll(s2, { dices: [2, 4, 1, 5, 6] })
-		const s4 = roll(s3, { dices: [2, 4, 1, 5, 6] })
-		assert.throws(
-			() => roll(s4, { dices: [2, 4, 1, 5, 6] }),
-			e => e === "ROLLS_EXCEEDED"
-		)
+		flow(createGame(2))
+			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
+			.peak(s => {
+				assert.strictEqual(s.roll, 1)
+				assert.deepStrictEqual(s.dices, [2, 4, 1, 5, 6])
+			})
 	})
 
 	it("rejects invalid dices", () => {
@@ -67,28 +63,88 @@ describe("[Yahtzee] Rolling", () => {
 	})
 })
 
-describe("[Yahtzee] Scoring", () => {
-	it("scores dices", () => {
-		const s1 = createGame(2)
-		const s2 = roll(s1, { dices: [2, 5, 3, 2, 2] })
-		const s3 = record(s2, { category: "twos" })
-		assert.strictEqual(s3.scorecards[0].twos, 6)
+describe("[Game] Scoring", () => {
+	it("scores dices for individual players", () => {
+		flow(createGame(2))
+			.then(s => roll(s, { dices: [2, 5, 3, 2, 2] }))
+			.then(s => record(s, { category: "twos" }))
+			.peak(s => assert.strictEqual(s.scorecards[0].twos, 6))
+			.then(s => roll(s, { dices: [1, 2, 3, 4, 5] }))
+			.then(s => record(s, { category: "largeStraight" }))
+			.peak(s => assert.strictEqual(s.scorecards[1].largeStraight, 40))
 	})
 
 	it("can cross out", () => {
-		const s1 = createGame(2)
-		const s2 = roll(s1, { dices: [2, 5, 3, 2, 2] })
-		const s3 = record(s2, { category: "yahtzee" })
-		assert.strictEqual(s3.scorecards[0].yahtzee, 0)
+		flow(createGame(2))
+			.then(s => roll(s, { dices: [2, 5, 3, 2, 2] }))
+			.then(s => record(s, { category: "yahtzee" }))
+			.peak(s => assert.strictEqual(s.scorecards[0].yahtzee, 0))		
 	})
 
 	it("cannot overwrite existing scores", () => {
-		const s1 = createGame(3)
-		s1.scorecards[s1.onTurn].threeOfAKind = 21
-		const s2 = roll(s1, { dices: [2, 4, 4, 4, 1] })
+		flow(createGame(3))
+			.then(s => {
+				s.scorecards[s.onTurn].threeOfAKind = 21
+				return s
+			})
+			.then(s => roll(s, { dices: [2, 4, 4, 4, 1] }))
+			.peak(s => {
+				assert.throws(
+					() => record(s, { category: "threeOfAKind" }),
+					e => e === "CATEGORY_ALREADY_RECORDED"
+				)
+			})
+	})
+})
+
+describe("[Game] Game play", () => {
+	it("can roll no more than three times", () => {
+		flow(createGame(2))
+			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
+			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
+			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
+			.peak(s => {
+				assert.throws(
+					() => roll(s, { dices: [2, 4, 1, 5, 6] }),
+					e => e === "ROLLS_EXCEEDED"
+				)
+			})
+	})
+
+	it("cannot score without dices", () => {
+		const s = createGame(2)
 		assert.throws(
-			() => record(s2, { category: "threeOfAKind" }),
-			e => e === "CATEGORY_ALREADY_RECORDED"
+			() => record(s, { category: "threeOfAKind" }),
+			e => e === "NO_DICES_ROLLED"
 		)
+	})
+
+	it("advances to next player after record", () => {
+		flow(createGame(2))
+			.then(s => roll(s, { dices: [3, 3, 2, 1, 2] }))
+			.then(s => record(s, { category: "threes" }))
+			.peak(s => {
+				assert.strictEqual(s.onTurn, 1)
+				assert.strictEqual(s.dices, null)
+				assert.strictEqual(s.roll, 0)
+			})
+			.then(s => roll(s, { dices: [1, 1, 6, 1, 4] }))
+			.then(s => record(s, { category: "aces" }))
+			.peak(s => assert.strictEqual(s.onTurn, 0))
+	})
+
+	it("indicates finished game when scorecards are full", () => {
+		flow(createGame(1))
+			.then(s => {
+				s.scorecards[0] = { aces: 1, twos: 2, threes: 3, fours: 4, fives: 5,
+					sixes: 6, threeOfAKind: 10, fourOfAKind: 20, fullHouse: 25,
+					smallStraight: 30, largeStraight: 40, yahtzee: 50, chance: null }
+				return s
+			})
+			.then(s => roll(s, { dices: [3, 3, 2, 1, 2] }))
+			.then(s => record(s, { category: "chance" }))
+			.peak(s => {
+				assert.strictEqual(s.onTurn, null)
+			})
 	})
 })

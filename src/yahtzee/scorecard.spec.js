@@ -1,5 +1,5 @@
 const assert = require("assert")
-const { createScorecard, count } = require("./scorecard")
+const { createScorecard, count, isFilledUp } = require("./scorecard")
 
 describe("[Scorecard] Calculation", () => {
 	it("counts aces", () => {
@@ -79,5 +79,12 @@ describe("[Scorecard] Calculation", () => {
 		assert.strictEqual(count([2, 1, 5, 1, 2]).chance, 11)
 		assert.strictEqual(count([1, 1, 1, 1, 1]).chance, 5)
 		assert.strictEqual(count([6, 3, 3, 3, 5]).chance, 20)
+	})
+})
+
+describe("[Scorecard] Selectors", () => {
+	it("isFilledUp", () => {
+		assert.strictEqual(isFilledUp({ aces: null, twos: 3 }), false)
+		assert.strictEqual(isFilledUp({ aces: 4, twos: 3 }), true)
 	})
 })

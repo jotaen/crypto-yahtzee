@@ -45,3 +45,5 @@ module.exports.count = dices => {
 		chance: sumAllValues(cs),
 	}
 }
+
+module.exports.isFilledUp = sc => Object.values(sc).filter(s => s === null).length === 0

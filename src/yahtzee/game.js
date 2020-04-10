@@ -1,4 +1,4 @@
-const { createScorecard, count } = require("./scorecard")
+const { createScorecard, count, isFilledUp } = require("./scorecard")
 
 const deepClone = obj => JSON.parse(JSON.stringify(obj))
 
@@ -19,13 +19,26 @@ module.exports.roll = (state, { player, dices }) => {
 	return { ...state, roll: state.roll+1, dices: dices }
 }
 
+const advanceTurn = (state) => {
+	const nextOnTurn = state.scorecards.length-1 === state.onTurn ? 0 : state.onTurn + 1
+	return {
+		...state,
+		onTurn: isFilledUp(state.scorecards[nextOnTurn]) ? null : nextOnTurn,
+		roll: 0,
+		dices: null,
+	}
+}
+
 module.exports.record = (state, { dices, category }) => {
 	const scorecard = state.scorecards[state.onTurn]
+	if (state.dices === null) {
+		throw "NO_DICES_ROLLED"
+	}
 	if (scorecard[category] !== null) {
 		throw "CATEGORY_ALREADY_RECORDED"
 	}
 	const potentialScores = count(state.dices)
 	const newState = deepClone(state)
-	newState.scorecards[state.onTurn][category] = potentialScores[category]
-	return newState
+	newState.scorecards[newState.onTurn][category] = potentialScores[category]
+	return advanceTurn(newState)
 }
