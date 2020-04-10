@@ -1,4 +1,4 @@
-const { sign, hash, random } = require("./crypto")
+const { sign, hash, random } = require("./cryptoFunctions")
 
 const freeze = block => Object.freeze({
 	...block,
