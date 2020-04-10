@@ -15,19 +15,16 @@ describe("[Scorecard] Calculation", () => {
 	it("counts threes", () => {
 		assert.strictEqual(count([4, 5, 1, 1, 4]).threes, 0)
 		assert.strictEqual(count([3, 6, 6, 3, 2]).threes, 6)
-		
 	})
 
 	it("counts fours", () => {
 		assert.strictEqual(count([1, 1, 1, 1, 1]).fours, 0)
 		assert.strictEqual(count([4, 6, 3, 1, 1]).fours, 4)
-		
 	})
 
 	it("counts fives", () => {
 		assert.strictEqual(count([4, 2, 2, 6, 1]).fives, 0)
 		assert.strictEqual(count([6, 1, 5, 5, 5]).fives, 15)
-		
 	})
 
 	it("counts sixes", () => {
