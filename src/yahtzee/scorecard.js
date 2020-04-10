@@ -1,4 +1,4 @@
-module.exports.createScorecard = () => ({
+module.exports.createScorecard = initialValues => ({
 	aces: null,
 	twos: null,
 	threes: null,
@@ -12,6 +12,7 @@ module.exports.createScorecard = () => ({
 	largeStraight: null,
 	yahtzee: null,
 	chance: null,
+	...initialValues,
 })
 
 const diceCounter = ds => ([
@@ -47,3 +48,12 @@ module.exports.count = dices => {
 }
 
 module.exports.isFilledUp = sc => Object.values(sc).filter(s => s === null).length === 0
+
+module.exports.sum = sc => {
+	const upperPoints = sc.aces + sc.twos + sc.threes + sc.fours + sc.fives + sc.sixes
+	const bonus = upperPoints >= 63 ? 35 : 0
+	const lowerTotal = sc.threeOfAKind + sc.fourOfAKind + sc.fullHouse + sc.smallStraight + sc.largeStraight + sc.yahtzee + sc.chance
+	const upperTotal = upperPoints + bonus
+	const total = upperTotal + lowerTotal
+	return { upperPoints, bonus, upperTotal, lowerTotal, total }
+}

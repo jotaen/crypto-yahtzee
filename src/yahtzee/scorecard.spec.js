@@ -1,5 +1,5 @@
 const assert = require("assert")
-const { createScorecard, count, isFilledUp } = require("./scorecard")
+const { createScorecard, count, isFilledUp, sum } = require("./scorecard")
 
 describe("[Scorecard] Calculation", () => {
 	it("counts aces", () => {
@@ -83,8 +83,42 @@ describe("[Scorecard] Calculation", () => {
 })
 
 describe("[Scorecard] Selectors", () => {
-	it("isFilledUp", () => {
-		assert.strictEqual(isFilledUp({ aces: null, twos: 3 }), false)
+	it("checks whether card is filled up", () => {
+		const partiallyFilled = createScorecard({ aces: 1, twos: 4 })
+		assert.strictEqual(isFilledUp(partiallyFilled), false)
+
+		const completelyFilled = createScorecard({
+			aces: 1, twos: 2, threes: 3, fours: 4, fives: 5,
+			sixes: 6, threeOfAKind: 10, fourOfAKind: 20, fullHouse: 25,
+			smallStraight: 30, largeStraight: 40, yahtzee: 50, chance: 12 })
 		assert.strictEqual(isFilledUp({ aces: 4, twos: 3 }), true)
+	})
+
+	it("sums all scored points", () => {
+		const scores = createScorecard({
+			aces: 1, twos: 2, threes: null, fours: 4, fives: 5,
+			sixes: 6, threeOfAKind: 10, fourOfAKind: null, fullHouse: 25,
+			smallStraight: null, largeStraight: 40, yahtzee: 50, chance: 12 })
+		assert.deepStrictEqual(sum(scores), {
+			upperPoints: 18,
+			bonus: 0,
+			upperTotal: 18,
+			lowerTotal: 137,
+			total: 155,
+		})
+	})
+
+	it("accounts for bonus", () => {
+		const scores = createScorecard({
+			aces: 3, twos: 6, threes: 9, fours: 12, fives: 15,
+			sixes: 18, threeOfAKind: 10, fourOfAKind: 20, fullHouse: 25,
+			smallStraight: 30, largeStraight: 40, yahtzee: 50, chance: 12 })
+		assert.deepStrictEqual(sum(scores), {
+			upperPoints: 63,
+			bonus: 35,
+			upperTotal: 98,
+			lowerTotal: 187,
+			total: 285,
+		})
 	})
 })
