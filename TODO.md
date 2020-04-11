@@ -1,7 +1,6 @@
 # TODO
 
 ## Yahtzee
-- Select dices before roll
 - Configure order of players
 
 ## Crypto
