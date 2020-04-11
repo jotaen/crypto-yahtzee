@@ -1,5 +1,7 @@
 const assert = require("assert")
 const Blockchain = require("./blockchain")
+const rsa = require("./rsa")
+
 const { ALICE, BOB } = require("./testdata.json")
 
 describe("[Blockchain] Creation", () => {
@@ -46,7 +48,13 @@ describe("[Blockchain] Block management", () => {
 		assert.strictEqual(b.stagedBlock(), null)
 	})
 
-	it("signs own block correctly") // todo
+	it("signs own block correctly", () => {
+		const b = Blockchain.createNew("123", ALICE, [BOB.public])
+		b.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
+		b.commit()
+		assert.strictEqual(rsa.verify(b.latestBlock(), ALICE.public), true)
+		assert.strictEqual(rsa.verify(b.latestBlock(), BOB.public), false)
+	})
 
 	it("cannot commit when nothing was staged", () => {
 		const b = Blockchain.createNew("123", ALICE, [BOB.public])
