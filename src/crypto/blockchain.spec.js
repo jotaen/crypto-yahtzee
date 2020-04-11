@@ -2,7 +2,7 @@ const assert = require("assert")
 const Blockchain = require("./blockchain")
 const rsa = require("./rsa")
 
-const { ALICE, BOB } = require("./testdata.json")
+const { ALICE, BOB, CHRIS } = require("./testdata.json")
 
 describe("[Blockchain] Creation", () => {
 	it("stores basic info in initial block", () => {
@@ -54,6 +54,28 @@ describe("[Blockchain] Block management", () => {
 		b.commit()
 		assert.strictEqual(rsa.verify(b.latestBlock(), ALICE.public), true)
 		assert.strictEqual(rsa.verify(b.latestBlock(), BOB.public), false)
+	})
+
+	it("rejects foreign blocks with invalid signature", () => {
+		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
+		const bobBlockchain = Blockchain.createWithRoot(BOB, aliceBlockchain.latestBlock())
+		const chrisBlockchain = Blockchain.createNew("234", CHRIS, [BOB.public])
+
+		bobBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
+		bobBlockchain.commit()
+
+		chrisBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
+		chrisBlockchain.commit()
+
+		const corruptedBlock = {
+			...bobBlockchain.latestBlock(),
+			signature: chrisBlockchain.latestBlock().signature
+		}
+
+		assert.throws(
+			() => aliceBlockchain.stageForeignBlock({}, corruptedBlock),
+			e => e === "INVALID_SIGNATURE"
+		)
 	})
 
 	it("cannot commit when nothing was staged", () => {

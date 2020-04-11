@@ -1,5 +1,5 @@
 const { hash } = require("./hash")
-const { sign } = require("./rsa")
+const { sign, verify } = require("./rsa")
 
 const freeze = block => Object.freeze({
 	...block,
@@ -11,6 +11,7 @@ class Blockchain {
 		this._publicKey = keyPair.public
 		this._privateKey = keyPair.private
 		this._blockchain = [Object.freeze(rootBlock)]
+		this._participants = rootBlock.participants
 		this._stagedBlock = null
 	}
 
@@ -26,14 +27,17 @@ class Blockchain {
 		if (block.precedingBlock !== hash(this.latestBlock())) {
 			throw "INCOMPATIBLE_BLOCK"
 		}
+		if (! verify(block, this._participants[block.author])) {
+			throw "INVALID_SIGNATURE"
+		}
 		this._stagedBlock = block
 	}
 
 	stageOwnBlock(state, payload) {
 		const block = {
 			precedingBlock: hash(this.latestBlock()),
-			state: hash(state),
-			actor: hash(this._publicKey),
+			// state: hash(state), // TODO
+			author: hash(this._publicKey),
 			payload: payload,
 			signature: null,
 		}
