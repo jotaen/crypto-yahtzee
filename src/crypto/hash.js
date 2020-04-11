@@ -1,9 +1,19 @@
 const safeStringify = require("json-stable-stringify")
 const { createHash } = require("crypto")
 
+const HASHABLE_PREDICATES = [
+	x => typeof x === "object" && x !== null,
+	x => typeof x === "array",
+	x => typeof x === "string",
+	x => typeof x === "number" && !Number.isNaN(x),
+]
+
 const hash = data => {
-	const isComplex = (typeof data === "object" || typeof data === "array")
-	const message = isComplex ? safeStringify(data) : data
+	if (!HASHABLE_PREDICATES.some(p => p(data))) {
+		return null
+	}
+	const isComplex = ["object", "array"].includes(typeof data)
+	const message = isComplex ? safeStringify(data) : String(data)
 	return createHash("sha256").update(message).digest("hex")
 }
 

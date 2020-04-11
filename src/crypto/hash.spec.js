@@ -7,10 +7,23 @@ describe("[Hash] Hash", () => {
 			hash("hello"),
 			"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
 		)
+		assert.strictEqual(
+			hash(5627),
+			"1ba3c39b667caa93fe3cfb6db5243f90ad7defe445a936570912279e9fea762f"
+		)
 	})
 
-	it("hashes object regardless of their property order", () => {
+	it("hashes object (regardless of their property order)", () => {
+		assert.strictEqual(
+			hash({foo: 1, bar: 2}),
+			"48c194fb31dbcbf03db282ef4bd9d0a05bb043f048174805438d4a11d4bd0e42"
+		)
 		assert.strictEqual(hash({foo: 1, bar: 2}), hash({bar: 2, foo: 1}))
+	})
+
+	it("doesn’t do anything for void input", () => {
+		assert.strictEqual(hash(null), null)
+		assert.strictEqual(hash(undefined), null)
 	})
 })
 
