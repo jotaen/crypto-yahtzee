@@ -1,10 +1,17 @@
-const { hash } = require("./hash")
+const { hash, isHash } = require("./hash")
 const { sign, verify } = require("./rsa")
 
 const freeze = block => Object.freeze({
 	...block,
 	payload: Object.freeze(block.payload)
 })
+
+const BLOCK_PROPERTIES = ["precedingBlock", "author", "signature", "payload"]
+const isValidFormat = block =>
+	Object.keys(block).every(v => BLOCK_PROPERTIES.includes(v))
+	&& Object.keys(block).length === BLOCK_PROPERTIES.length
+	&& isHash(block.precedingBlock)
+	&& isHash(block.author)
 
 class Blockchain {
 	constructor(keyPair, rootBlock) {
@@ -26,6 +33,9 @@ class Blockchain {
 	stageForeignBlock(state, block) {
 		if (block.precedingBlock !== hash(this.latestBlock())) {
 			throw "INCOMPATIBLE_BLOCK"
+		}
+		if (! isValidFormat(block)) {
+			throw "MALFORMED_BLOCK"
 		}
 		if (! verify(block, this._participants[block.author])) {
 			throw "INVALID_SIGNATURE"
@@ -54,9 +64,7 @@ class Blockchain {
 	}
 }
 
-module.exports.Blockchain = Blockchain
-
-module.exports.createNew = (guid, keyPair, otherPublicKeys) => {
+const createNew = (guid, keyPair, otherPublicKeys) => {
 	const participants = [keyPair.public, ...otherPublicKeys].reduce((a, c) => {
 		a[hash(c)] = c
 		return a
@@ -69,6 +77,10 @@ module.exports.createNew = (guid, keyPair, otherPublicKeys) => {
 	})
 }
 
-module.exports.createWithRoot = (keyPair, rootBlock) => {
+const createWithRoot = (keyPair, rootBlock) => {
 	return new Blockchain(keyPair, rootBlock)
+}
+
+module.exports = {
+	createNew, createWithRoot
 }

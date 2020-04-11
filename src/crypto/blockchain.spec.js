@@ -78,6 +78,25 @@ describe("[Blockchain] Block management", () => {
 		)
 	})
 
+	it("rejects foreign blocks that contain unknown properties", () => {
+		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
+		const bobBlockchain = Blockchain.createWithRoot(BOB, aliceBlockchain.latestBlock())
+
+		bobBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
+		bobBlockchain.commit()
+
+		const corruptedBlock = {
+			...bobBlockchain.latestBlock(),
+			foo: 1,
+			bar: "hello",
+		}
+
+		assert.throws(
+			() => aliceBlockchain.stageForeignBlock({}, corruptedBlock),
+			e => e === "MALFORMED_BLOCK"
+		)
+	})
+
 	it("cannot commit when nothing was staged", () => {
 		const b = Blockchain.createNew("123", ALICE, [BOB.public])
 		assert.throws(

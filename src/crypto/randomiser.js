@@ -1,7 +1,4 @@
-const { hash } = require("./hash")
-
-const isHexString = length =>
-	x => typeof x === "string" && x.length === length && /^[a-f0-9]*$/.test(x)
+const { hash, isHexString, isHash } = require("./hash")
 
 const isOkay = entry => {
 	if (!entry.hashes || !entry.values) {
@@ -45,7 +42,7 @@ class ConcertedRandomiser {
 	}
 
 	submitHashes(participant, hashes) {
-		this._submit("hashes", isHexString(64), participant, hashes)
+		this._submit("hashes", isHash, participant, hashes)
 	}
 
 	submitValues(participant, values) {
