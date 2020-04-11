@@ -24,9 +24,9 @@ module.exports.createGame = (players) => ({
 	scorecards: players.map(() => createScorecard()),
 })
 
-module.exports.roll = (state, { dices }) => {
-	if (state.onTurn === null) {
-		throw "GAME_FINISHED"
+module.exports.roll = (state, { player, dices }) => {
+	if (state.players[state.onTurn] !== player) {
+		throw "NOT_ON_TURN"
 	}
 	const rollers = state.dices.filter(d => d === null)
 	const remainers = state.dices.filter(d => d !== null)
@@ -40,7 +40,10 @@ module.exports.roll = (state, { dices }) => {
 	return { ...state, attempt: state.attempt+1, dices: newDices }
 }
 
-module.exports.select = (state, { dices }) => {
+module.exports.select = (state, { player, dices }) => {
+	if (state.players[state.onTurn] !== player) {
+		throw "NOT_ON_TURN"
+	}
 	if (state.attempt >= 3) {
 		throw "ROLLS_EXCEEDED"
 	}
@@ -67,10 +70,16 @@ const advanceTurn = (state) => {
 	}
 }
 
-module.exports.record = (state, { dices, category }) => {
+module.exports.record = (state, { player, dices, category }) => {
+	if (state.players[state.onTurn] !== player) {
+		throw "NOT_ON_TURN"
+	}
 	const scorecard = state.scorecards[state.onTurn]
 	if (state.dices.some(d => d === null)) {
 		throw "NO_DICES_ROLLED"
+	}
+	if (! (category in scorecard)) {
+		throw "INVALID_CATEGORY"
 	}
 	if (scorecard[category] !== null) {
 		throw "CATEGORY_ALREADY_RECORDED"
