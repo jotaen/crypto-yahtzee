@@ -6,7 +6,7 @@ const freeze = block => Object.freeze({
 	payload: Object.freeze(block.payload)
 })
 
-const BLOCK_PROPERTIES = ["precedingBlock", "author", "signature", "payload"]
+const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
 const isValidFormat = block =>
 	Object.keys(block).every(v => BLOCK_PROPERTIES.includes(v))
 	&& Object.keys(block).length === BLOCK_PROPERTIES.length
@@ -40,13 +40,16 @@ class Blockchain {
 		if (! verify(block, this._participants[block.author])) {
 			throw "INVALID_SIGNATURE"
 		}
+		if (hash(state) !== block.state) {
+			throw "INCOMPATIBLE_STATE"
+		}
 		this._stagedBlock = block
 	}
 
 	stageOwnBlock(state, payload) {
 		const block = {
 			precedingBlock: hash(this.latestBlock()),
-			// state: hash(state), // TODO
+			state: hash(state),
 			author: hash(this._publicKey),
 			payload: payload,
 			signature: null,

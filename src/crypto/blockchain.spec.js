@@ -32,7 +32,7 @@ describe("[Blockchain] Creation", () => {
 	})
 })
 
-describe("[Blockchain] Block management", () => {
+describe("[Blockchain] Block creation", () => {
 	it("creates new block from payload", () => {
 		const b = Blockchain.createNew("123", ALICE, [BOB.public])
 		const payload = { action: "FOO" }
@@ -54,6 +54,42 @@ describe("[Blockchain] Block management", () => {
 		b.commit()
 		assert.strictEqual(rsa.verify(b.latestBlock(), ALICE.public), true)
 		assert.strictEqual(rsa.verify(b.latestBlock(), BOB.public), false)
+	})
+
+	it("cannot commit when nothing was staged", () => {
+		const b = Blockchain.createNew("123", ALICE, [BOB.public])
+		assert.throws(
+			() => b.commit(),
+			e => e === "NO_BLOCK_STAGED"
+		)
+	})
+})
+
+describe("[Blockchain] Foreign blocks", () => {
+	it("accepts compatible foreign blocks", () => {
+		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
+		const bobBlockchain = Blockchain.createWithRoot(BOB, aliceBlockchain.latestBlock())
+
+		aliceBlockchain.stageOwnBlock({ someState: 3126 }, { foo: 2 })
+		aliceBlockchain.commit()
+
+		bobBlockchain.stageForeignBlock({ someState: 3126 }, aliceBlockchain.latestBlock())
+		bobBlockchain.commit()
+
+		assert.deepStrictEqual(aliceBlockchain.latestBlock(), bobBlockchain.latestBlock())
+	})
+
+	it("rejects foreign blocks from alien blockchain", () => {
+		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
+		const bobBlockchain = Blockchain.createNew("abc", BOB, [])
+
+		aliceBlockchain.stageOwnBlock({}, { foo: 2 })
+		aliceBlockchain.commit()
+
+		assert.throws(
+			() => bobBlockchain.stageForeignBlock({}, aliceBlockchain.latestBlock()),
+			e => e === "INCOMPATIBLE_BLOCK"
+		)
 	})
 
 	it("rejects foreign blocks with invalid signature", () => {
@@ -97,37 +133,17 @@ describe("[Blockchain] Block management", () => {
 		)
 	})
 
-	it("cannot commit when nothing was staged", () => {
-		const b = Blockchain.createNew("123", ALICE, [BOB.public])
-		assert.throws(
-			() => b.commit(),
-			e => e === "NO_BLOCK_STAGED"
-		)
-	})
-
-	it("can commit compatible foreign blocks", () => {
+	it("rejects foreign blocks that are based off an incompatible state", () => {
 		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
 		const bobBlockchain = Blockchain.createWithRoot(BOB, aliceBlockchain.latestBlock())
 
-		aliceBlockchain.stageOwnBlock({}, { foo: 2 })
-		aliceBlockchain.commit()
-
-		bobBlockchain.stageForeignBlock({}, aliceBlockchain.latestBlock())
+		bobBlockchain.stageOwnBlock({ someState: 2 }, { action: "FOO" })
 		bobBlockchain.commit()
 
-		assert.deepStrictEqual(aliceBlockchain.latestBlock(), bobBlockchain.latestBlock())
-	})
-
-	it("rejects incompatible foreign blocks upon staging", () => {
-		const aliceBlockchain = Blockchain.createNew("123", ALICE, [BOB.public])
-		const bobBlockchain = Blockchain.createNew("abc", BOB, [])
-
-		aliceBlockchain.stageOwnBlock({}, { foo: 2 })
-		aliceBlockchain.commit()
-
 		assert.throws(
-			() => bobBlockchain.stageForeignBlock({}, aliceBlockchain.latestBlock()),
-			e => e === "INCOMPATIBLE_BLOCK"
+			() => aliceBlockchain.stageForeignBlock({ someState: 1928 }, bobBlockchain.latestBlock()),
+			e => e === "INCOMPATIBLE_STATE"
 		)
+
 	})
 })
