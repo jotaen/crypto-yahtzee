@@ -222,6 +222,12 @@ describe("[Game] Game play", () => {
 					e => e === "NOT_ON_TURN"
 				)
 			})
+			.peak(s => {
+				assert.throws(
+					() => roll(s, { player: "qoiweufhajsduwhihas", dices: [1, 4, 1, 5, 6] }),
+					e => e === "NOT_ON_TURN"
+				)
+			})
 			.then(s => record(s, { player: "joe", category: "chance" }))
 			.peak(s => {
 				assert.throws(
@@ -264,6 +270,49 @@ describe("[Game] Game play", () => {
 					() => select(s, { player: "joe", dices: [5, 5, 5, null, null] }),
 					e => e === "ROLLS_EXCEEDED"
 				)
+			})
+	})
+})
+
+describe("[Game] Integration test", () => {
+	it("works across a whole series of actions", () => {
+		flow(createGame(["joe", "lisa"]))
+			.then(s => roll(s, { player: "joe", dices: [1, 4, 1, 5, 6] }))
+			.then(s => select(s, { player: "joe", dices: [5, null, null, null, null] }))
+			.then(s => roll(s, { player: "joe", dices: [5, 2, 3, 1] }))
+			.then(s => select(s, { player: "joe", dices: [5, 5, null, null, null] }))
+			.then(s => roll(s, { player: "joe", dices: [3, 5, 1] }))
+			.then(s => record(s, { player: "joe", category: "fives" }))
+			.then(s => roll(s, { player: "lisa", dices: [1, 2, 3, 4, 5] }))
+			.then(s => record(s, { player: "lisa", category: "largeStraight" }))
+			.then(s => roll(s, { player: "joe", dices: [4, 4, 2, 3, 1] }))
+			.then(s => select(s, { player: "joe", dices: [4, 4, null, null, null] }))
+			.then(s => roll(s, { player: "joe", dices: [1, 1, 2] }))
+			.then(s => select(s, { player: "joe", dices: [1, 2, 4, null, null] }))
+			.then(s => roll(s, { player: "joe", dices: [3, 4] }))
+			.then(s => record(s, { player: "joe", category: "smallStraight" }))
+			.then(s => roll(s, { player: "lisa", dices: [6, 5, 6, 2, 2] }))
+			.then(s => select(s, { player: "lisa", dices: [null, null, 6, 6, null] }))
+			.then(s => roll(s, { player: "lisa", dices: [3, 6, 5] }))
+			.then(s => select(s, { player: "lisa", dices: [null, null, 6, 6, 6] }))
+			.then(s => roll(s, { player: "lisa", dices: [3, 3] }))
+			.then(s => record(s, { player: "lisa", category: "fullHouse" }))
+			.then(s => roll(s, { player: "joe", dices: [2, 2, 2, 2, 5] }))
+			.then(s => select(s, { player: "joe", dices: [2, 2, 2, 2, null] }))
+			.then(s => roll(s, { player: "joe", dices: [3] }))
+			.then(s => select(s, { player: "joe", dices: [2, 2, 2, 2, null] }))
+			.then(s => roll(s, { player: "joe", dices: [2] }))
+			.then(s => record(s, { player: "joe", category: "yahtzee" }))
+			// to be continued… 🤪
+			.peak(s => {
+				assert.deepStrictEqual(s.scorecards, [
+					{ aces: null, twos: null, threes: null, fours: null, fives: 15,
+					sixes: null, threeOfAKind: null, fourOfAKind: null, fullHouse: null,
+					smallStraight: 30, largeStraight: null, yahtzee: 50, chance: null },
+					{ aces: null, twos: null, threes: null, fours: null, fives: null,
+						sixes: null, threeOfAKind: null, fourOfAKind: null, fullHouse: 25,
+						smallStraight: null, largeStraight: 40, yahtzee: null, chance: null },
+				])
 			})
 	})
 })
