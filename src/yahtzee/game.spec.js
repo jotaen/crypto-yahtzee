@@ -8,10 +8,11 @@ const flow = game => ({
 
 describe("[Game] Initialisation", () => {
 	it("creates empty default state", () => {
-		const s = createGame(3)
+		const s = createGame(["joe", "lisa", "mike"])
 		assert.deepStrictEqual(s, {
+			players: ["joe", "lisa", "mike"],
 			onTurn: 0,
-			roll: 0,
+			attempt: 0,
 			dices: [null, null, null, null, null],
 			scorecards: [
 				{ aces: null, twos: null, threes: null, fours: null, fives: null,
@@ -30,7 +31,7 @@ describe("[Game] Initialisation", () => {
 
 describe("[Game] Selecting", () => {
 	it("rejects selecting on first attempt", () => {
-		const s = createGame(2)
+		const s = createGame(["joe", "lisa"])
 
 		assert.throws(
 			() => select(s, { dices: [null, null, null, null, null] }),
@@ -39,7 +40,7 @@ describe("[Game] Selecting", () => {
 	})
 
 	it("rejects invalid selections", () => {
-		const s0 = createGame(2)
+		const s0 = createGame(["joe", "lisa"])
 		const s = roll(s0, { dices: [2, 4, 1, 5, 6] })
 
 		;[
@@ -59,7 +60,7 @@ describe("[Game] Selecting", () => {
 	})
 
 	it("rejects incompatible selections (e.g. with made-up values)", () => {
-		const s0 = createGame(2)
+		const s0 = createGame(["joe", "lisa"])
 		const s = roll(s0, { dices: [2, 4, 1, 5, 6] })
 
 		;[
@@ -77,28 +78,28 @@ describe("[Game] Selecting", () => {
 
 describe("[Game] Rolling", () => {
 	it("takes over the rolls of a player", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
 			.peak(s => {
-				assert.strictEqual(s.roll, 1)
+				assert.strictEqual(s.attempt, 1)
 				assert.deepStrictEqual(s.dices, [1, 2, 4, 5, 6])
 			})
 			.then(s => select(s, { dices: [6, null, null, null, null] }))
 			.then(s => roll(s, { dices: [3, 5, 6, 1] }))
 			.peak(s => {
-				assert.strictEqual(s.roll, 2)
+				assert.strictEqual(s.attempt, 2)
 				assert.deepStrictEqual(s.dices, [1, 3, 5, 6, 6])
 			})
 			.then(s => select(s, { dices: [6, null, 6, null, null] }))
 			.then(s => roll(s, { dices: [1, 6, 2] }))
 			.peak(s => {
-				assert.strictEqual(s.roll, 3)
+				assert.strictEqual(s.attempt, 3)
 				assert.deepStrictEqual(s.dices, [1, 2, 6, 6, 6])
 			})
 	})
 
 	it("rejects a roll if no dices have been selected (except first attempt)", () => {
-		const s0 = createGame(2)
+		const s0 = createGame(["joe", "lisa"])
 		const s = roll(s0, { dices: [2, 5, 4, 2, 3] })
 		assert.throws(
 			() => roll(s, { dices: [6, 6, 6, 6, 6] }),
@@ -107,7 +108,7 @@ describe("[Game] Rolling", () => {
 	})
 
 	it("rejects rolling more|less dices than have been selected", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			.then(s => roll(s, { dices: [2, 4, 1, 5, 6] }))
 			.then(s => select(s, { dices: [2, 4, null, 5, null] }))
 			.then(s => {
@@ -123,7 +124,7 @@ describe("[Game] Rolling", () => {
 	})
 
 	it("rejects invalid rolls", () => {
-		const s = createGame(2)
+		const s = createGame(["joe", "lisa"])
 
 		;[
 			2, // wrong type
@@ -144,7 +145,7 @@ describe("[Game] Rolling", () => {
 
 describe("[Game] Scoring", () => {
 	it("scores dices for individual players", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			// player 0:
 			.then(s => roll(s, { dices: [2, 5, 3, 2, 2] }))
 			.then(s => record(s, { category: "twos" }))
@@ -156,14 +157,14 @@ describe("[Game] Scoring", () => {
 	})
 
 	it("can cross out", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			.then(s => roll(s, { dices: [2, 5, 3, 2, 2] }))
 			.then(s => record(s, { category: "yahtzee" }))
 			.peak(s => assert.strictEqual(s.scorecards[0].yahtzee, 0))		
 	})
 
 	it("cannot overwrite existing scores", () => {
-		flow(createGame(3))
+		flow(createGame(["joe", "lisa", "mike"]))
 			.then(s => {
 				s.scorecards[s.onTurn].threeOfAKind = 21
 				return s
@@ -178,7 +179,7 @@ describe("[Game] Scoring", () => {
 	})
 
 	it("cannot score without having rolled", () => {
-		const s = createGame(2)
+		const s = createGame(["joe", "lisa"])
 		assert.throws(
 			() => record(s, { category: "threeOfAKind" }),
 			e => e === "NO_DICES_ROLLED"
@@ -188,13 +189,13 @@ describe("[Game] Scoring", () => {
 
 describe("[Game] Game play", () => {
 	it("advances to next player after record and cleans up", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			.then(s => roll(s, { dices: [3, 3, 2, 1, 2] }))
 			.then(s => record(s, { category: "threes" }))
 			.peak(s => {
 				assert.strictEqual(s.onTurn, 1)
 				assert.deepStrictEqual(s.dices, [null, null, null, null, null])
-				assert.strictEqual(s.roll, 0)
+				assert.strictEqual(s.attempt, 0)
 			})
 			.then(s => roll(s, { dices: [1, 1, 6, 1, 4] }))
 			.then(s => record(s, { category: "aces" }))
@@ -202,7 +203,7 @@ describe("[Game] Game play", () => {
 	})
 
 	it("indicates finished game when scorecards are full", () => {
-		flow(createGame(1))
+		flow(createGame(["joe"]))
 			.then(s => {
 				s.scorecards[0] = { aces: 1, twos: 2, threes: 3, fours: 4, fives: 5,
 					sixes: 6, threeOfAKind: 10, fourOfAKind: 20, fullHouse: 25,
@@ -223,7 +224,7 @@ describe("[Game] Game play", () => {
 	})
 
 	it("cannot attempt more than three times", () => {
-		flow(createGame(2))
+		flow(createGame(["joe", "lisa"]))
 			.then(s => roll(s, { dices: [1, 4, 1, 5, 6] }))
 			.then(s => select(s, { dices: [5, null, null, null, null] }))
 			.then(s => roll(s, { dices: [5, 2, 3, 1] }))

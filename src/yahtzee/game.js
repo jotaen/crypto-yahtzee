@@ -10,18 +10,18 @@ const isSelectionCompatible = (ds, ss) => {
 	const xs = [null, null, null, null, null].concat(ds)
 	return ss.reduce((a, c) => {
 		const i = xs.indexOf(c)
-		if (i === -1) a.push(c)
-		else xs[i] = undefined
+		if (i === -1) { a.push(c) }
+		else { xs[i] = undefined }
 		return a
 	}, []).length === 0
 }
 
-module.exports.createGame = (numberOfPlayers) => ({
-	// order: ["id-player-1", "id-player-3", "id-player-2"] // TODO
+module.exports.createGame = (players) => ({
+	players: players,
 	onTurn: 0,
-	roll: 0, // TODO rename to `attempt`
+	attempt: 0,
 	dices: [null, null, null, null, null],
-	scorecards: Array.from(Array(numberOfPlayers)).map(createScorecard),
+	scorecards: players.map(() => createScorecard()),
 })
 
 module.exports.roll = (state, { dices }) => {
@@ -37,11 +37,11 @@ module.exports.roll = (state, { dices }) => {
 		throw "INVALID_ROLL"
 	}
 	const newDices = remainers.concat(dices).sort((a,b) => a-b)
-	return { ...state, roll: state.roll+1, dices: newDices }
+	return { ...state, attempt: state.attempt+1, dices: newDices }
 }
 
 module.exports.select = (state, { dices }) => {
-	if (state.roll >= 3) {
+	if (state.attempt >= 3) {
 		throw "ROLLS_EXCEEDED"
 	}
 	if (state.dices.some(d => d === null)) {
@@ -58,11 +58,11 @@ module.exports.select = (state, { dices }) => {
 }
 
 const advanceTurn = (state) => {
-	const nextOnTurn = state.scorecards.length-1 === state.onTurn ? 0 : state.onTurn + 1
+	const nextOnTurn = state.players.length-1 === state.onTurn ? 0 : state.onTurn + 1
 	return {
 		...state,
 		onTurn: isFilledUp(state.scorecards[nextOnTurn]) ? null : nextOnTurn,
-		roll: 0,
+		attempt: 0,
 		dices: [null, null, null, null, null],
 	}
 }
