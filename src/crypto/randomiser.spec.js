@@ -150,7 +150,8 @@ describe.skip("[Randomiser] Integration test", () => {
 
 	it("distributes the value evenly across the spectrum", () => {
 		const result = {}
-		for (let i=0; i<9999; i++) {
+		const iterations = 99999
+		for (let i=0; i<iterations; i++) {
 			const participants = ["ALICE", "BOB"]
 			const cr = new ConcertedRandomiser(1, participants)
 			participants
@@ -166,5 +167,11 @@ describe.skip("[Randomiser] Integration test", () => {
 			result[x] = result[x] + 1
 		}
 		console.log(result)
+		const distribution = Object.values(result).sort((a,b) => a-b)
+		const min = distribution[0]
+		const max = distribution[distribution.length-1]
+
+		// due to random values, this assertation is allowed to fail occasionally
+		assert.strictEqual((max-min)/max < 0.05, true)
 	})
 })
