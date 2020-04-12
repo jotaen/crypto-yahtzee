@@ -1,4 +1,3 @@
-const { createStore } = require("redux")
 const { DiceCup, toDices } = require("./crypto/dicecup")
 const { Yahtzee } = require("./yahtzee/yahtzee")
 const { sortBy } = require("./lib/util")

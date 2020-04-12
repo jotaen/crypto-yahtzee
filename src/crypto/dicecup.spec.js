@@ -40,11 +40,11 @@ describe("[DiceCup] Generation", () => {
 		const alice = random()
 		const dc = new DiceCup(1, ["ALICE"])
 		dc.dispatch({ type: "SEED_HASHES", player: "ALICE", hashes: [alice.hash] })
-		dc.dispatch({ type: "SEED_VALUES", player: "ALICE", values: [alice.value] })
 		assert.throws(
 			() => dc.dispatch({ type: "SEED_HASHES", player: "ALICE", hashes: [random().hash] }),
 			e => e === "ALREADY_SUBMITTED"
 		)
+		dc.dispatch({ type: "SEED_VALUES", player: "ALICE", values: [alice.value] })
 		assert.throws(
 			() => dc.dispatch({ type: "SEED_VALUES", player: "ALICE", values: [random().value] }),
 			e => e === "ALREADY_SUBMITTED"
@@ -171,21 +171,22 @@ describe.skip("[DiceCup] Integration test", () => {
 	//  Leave skipped, because it’s slow
 	//
 
-	const { dice } = require("./hash")
-
 	it("distributes the value evenly across the spectrum", () => {
 		const result = {}
-		const iterations = 99999
+		const iterations = 20000
 		for (let i=0; i<iterations; i++) {
-			const participants = ["ALICE", "BOB"]
-			const cr = init(1, participants)
-			participants
-				.map((p) => ({ p: p, r: random() }))
-				.forEach(x => {
-					cr.submitHashes(x.p, [x.r.hash])
-					cr.submitValues(x.p, [x.r.value])
-				})
-			const x = dice(cr.retrieveNumbers()[0])
+			const players = [
+				{name: "ALICE", rand: random()},
+				{name: "BOB", rand: random()},
+			]
+			const dc = new DiceCup(1, players.map(p => p.name))
+			players.forEach(p => {
+				dc.dispatch({ type: "SEED_HASHES", player: p.name, hashes: [p.rand.hash] })
+			})
+			players.forEach(p => {
+				dc.dispatch({ type: "SEED_VALUES", player: p.name, values: [p.rand.value] })
+			})
+			const x = toDices(dc.retrieveNumbers())
 			if (! (x in result)) {
 				result[x] = 0
 			}
@@ -197,6 +198,6 @@ describe.skip("[DiceCup] Integration test", () => {
 		const max = distribution[distribution.length-1]
 
 		// due to random values, this assertation is allowed to fail occasionally
-		assert.strictEqual((max-min)/max < 0.05, true)
+		assert.strictEqual((max-min)/max < 0.1, true)
 	})
 })
