@@ -22,8 +22,6 @@ const isHexString = length =>
 
 const isHash = isHexString(64)
 
-const dice = int => Math.abs(int % 6) + 1
-
 module.exports = {
-	hash, isHexString, isHash, dice
+	hash, isHexString, isHash
 }

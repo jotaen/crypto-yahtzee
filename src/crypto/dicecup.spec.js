@@ -1,6 +1,6 @@
 const assert = require("assert")
 const { isHash, isHexString } = require("./hash")
-const { DiceCup, random } = require("./dicecup")
+const { DiceCup, toDices, random } = require("./dicecup")
 
 describe("[DiceCup] Generation", () => {
 	it("calculates a random value based on the values of every player", () => {
@@ -147,6 +147,21 @@ describe("[DiceCup] random()", () => {
 
 	it("yields different outputs every time", () => {
 		assert.notDeepStrictEqual(random(), random())
+	})
+})
+
+describe("[DiceCup] Conversion", () => {
+	it("yields values in the range [1-6]", () => {
+		assert.deepStrictEqual(toDices([0]), [1])
+		assert.deepStrictEqual(toDices([1]), [2])
+		assert.deepStrictEqual(toDices([2]), [3])
+		assert.deepStrictEqual(toDices([3]), [4])
+		assert.deepStrictEqual(toDices([4]), [5])
+		assert.deepStrictEqual(toDices([5]), [6])
+		assert.deepStrictEqual(toDices([6]), [1])
+		assert.deepStrictEqual(toDices([4, 7, 9, 123]), [5, 2, 4, 4])
+		assert.deepStrictEqual(toDices([373347153]), [4])
+		assert.deepStrictEqual(toDices([-1099927788]), [1])
 	})
 })
 

@@ -6,7 +6,7 @@ const roll = (state, { player, dices }) => {
 	const rollers = state.dices.filter(d => d === null)
 	const remainers = state.dices.filter(d => d !== null)
 	;[
-		["NOT_ON_TURN", () => state.players[state.onTurn] !== player],
+		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
 		["NO_DICES_SELECTED", () => rollers.length === 0],
 		["INVALID_ROLL", () => dices.length !== rollers.length],
 	].forEach(assert)
@@ -17,7 +17,7 @@ const roll = (state, { player, dices }) => {
 const select = (state, { player, dices }) => {
 	const remainers = dices.filter(d => d !== null)
 	;[
-		["NOT_ON_TURN", () => state.players[state.onTurn] !== player],
+		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
 		["ROLLS_EXCEEDED", () => state.attempt >= 3],
 		["ALREADY_SELECTED", () => state.dices.some(d => d === null)],
 		["INCOMPATIBLE_SELECTION", () => !isSubset(state.dices, remainers)],
@@ -28,7 +28,7 @@ const select = (state, { player, dices }) => {
 const record = (state, { player, category }) => {
 	const scorecard = state.scorecards[state.onTurn]
 	;[
-		["NOT_ON_TURN", () => state.players[state.onTurn] !== player],
+		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
 		["NO_DICES_ROLLED", () => state.dices.some(d => d === null)],
 		["CATEGORY_ALREADY_RECORDED", () => scorecard[category] !== null],
 	].forEach(assert)
@@ -90,16 +90,20 @@ class Yahtzee extends Store {
 	}
 
 	isOngoing() {
-		return this._store.getState().onTurn !== null
+		return this.getState().onTurn !== null
 	}
 
 	scorecard(player) {
-		const pid = this._store.getState().players.indexOf(player)
-		return this._store.getState().scorecards[pid]
+		const pid = this.getState().players.indexOf(player)
+		return this.getState().scorecards[pid]
 	}
 
 	rollingDices() {
-		return this._store.getState().dices.filter(d => d === null).length
+		return this.getState().dices.filter(d => d === null).length
+	}
+
+	onTurn() {
+		return this.getState().players[this.getState().onTurn]
 	}
 }
 

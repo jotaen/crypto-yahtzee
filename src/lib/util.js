@@ -14,6 +14,11 @@ const isSubset = (ds, ss) => {
 
 const assert = ([msg, assertation]) => { if (assertation()) throw msg; }
 
+const sortBy = (things, numbers) => things
+	.map((t, i) => ({ t: t, x: numbers[i] }))
+	.sort((a, b) => a.x-b.x)
+	.map(o => o.t)
+
 module.exports = {
-	isString, deepClone, isSubset, assert
+	isString, deepClone, isSubset, assert, sortBy
 }

@@ -32,6 +32,10 @@ class Store {
 	dispatch(action) {
 		return this._store.dispatch(action)
 	}
+
+	getState() {
+		return this._store.getState()
+	}
 }
 
 module.exports = {

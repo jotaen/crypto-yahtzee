@@ -64,8 +64,8 @@ class DiceCup extends Store {
 	}
 
 	isRolled() {
-		return this._store.getState().hashes.every(h => h !== null) &&
-			this._store.getState().values.every(h => h !== null)
+		return this.getState().hashes.every(h => h !== null) &&
+			this.getState().values.every(h => h !== null)
 	}
 
 	retrieveNumbers() {
@@ -73,8 +73,8 @@ class DiceCup extends Store {
 			throw "INPUT_NOT_COMPLETE_YET"
 		}
 
-		return Array.from(Array(this._store.getState().arity))
-			.map((_, i) => this._store.getState().values
+		return Array.from(Array(this.getState().arity))
+			.map((_, i) => this.getState().values
 					.map(vs => vs[i])
 					.map(v => parseInt(v, 16))
 					.reduce((a, c) => a ^ c, 0)
@@ -95,6 +95,8 @@ const random = () => {
 	}
 }
 
+const toDices = integers => integers.map(i => Math.abs(i % 6) + 1)
+
 module.exports = {
-	DiceCup, random
+	DiceCup, toDices, random
 }
