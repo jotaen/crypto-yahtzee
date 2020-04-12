@@ -1,6 +1,6 @@
 const { createScorecard, count, isFilledUp } = require("./scorecard")
-
-const deepClone = obj => JSON.parse(JSON.stringify(obj))
+const { isOfShape } = require("../lib/redux")
+const { isString, deepClone } = require("../lib/util")
 
 const isValidDice = d => [1, 2, 3, 4, 5, 6].includes(d)
 
@@ -16,7 +16,7 @@ const isSelectionCompatible = (ds, ss) => {
 	}, []).length === 0
 }
 
-module.exports.createGame = (players) => ({
+const init = (players) => ({
 	players: players,
 	onTurn: 0,
 	attempt: 0,
@@ -24,7 +24,7 @@ module.exports.createGame = (players) => ({
 	scorecards: players.map(() => createScorecard()),
 })
 
-module.exports.roll = (state, { player, dices }) => {
+const roll = (state, { player, dices }) => {
 	if (state.players[state.onTurn] !== player) {
 		throw "NOT_ON_TURN"
 	}
@@ -33,14 +33,14 @@ module.exports.roll = (state, { player, dices }) => {
 	if (rollers.length === 0) {
 		throw "NO_DICES_SELECTED"
 	}
-	if (dices.length !== rollers.length || !dices.every(isValidDice)) {
+	if (dices.length !== rollers.length) {
 		throw "INVALID_ROLL"
 	}
 	const newDices = remainers.concat(dices).sort((a,b) => a-b)
 	return { ...state, attempt: state.attempt+1, dices: newDices }
 }
 
-module.exports.select = (state, { player, dices }) => {
+const select = (state, { player, dices }) => {
 	if (state.players[state.onTurn] !== player) {
 		throw "NOT_ON_TURN"
 	}
@@ -50,27 +50,13 @@ module.exports.select = (state, { player, dices }) => {
 	if (state.dices.some(d => d === null)) {
 		throw "ALREADY_SELECTED"
 	}
-	if (!Array.isArray(dices) || dices.length !== 5 ||
-		!dices.every(isValidSelection) || !dices.some(d => d === null)) {
-		throw "INVALID_SELECTION"
-	}
 	if (!isSelectionCompatible(state.dices, dices)) {
 		throw "INCOMPATIBLE_SELECTION"
 	}
 	return { ...state, dices: dices.slice() }
 }
 
-const advanceTurn = (state) => {
-	const nextOnTurn = state.players.length-1 === state.onTurn ? 0 : state.onTurn + 1
-	return {
-		...state,
-		onTurn: isFilledUp(state.scorecards[nextOnTurn]) ? null : nextOnTurn,
-		attempt: 0,
-		dices: [null, null, null, null, null],
-	}
-}
-
-module.exports.record = (state, { player, dices, category }) => {
+const record = (state, { player, category }) => {
 	if (state.players[state.onTurn] !== player) {
 		throw "NOT_ON_TURN"
 	}
@@ -78,14 +64,59 @@ module.exports.record = (state, { player, dices, category }) => {
 	if (state.dices.some(d => d === null)) {
 		throw "NO_DICES_ROLLED"
 	}
-	if (! (category in scorecard)) {
-		throw "INVALID_CATEGORY"
-	}
 	if (scorecard[category] !== null) {
 		throw "CATEGORY_ALREADY_RECORDED"
 	}
-	const potentialScores = count(state.dices)
 	const newState = deepClone(state)
-	newState.scorecards[newState.onTurn][category] = potentialScores[category]
-	return advanceTurn(newState)
+	const nextOnTurn = state.players.length-1 === state.onTurn ? 0 : state.onTurn + 1
+	newState.scorecards[newState.onTurn][category] = count(state.dices)[category]
+	newState.onTurn = isFilledUp(newState.scorecards[nextOnTurn]) ? null : nextOnTurn
+	newState.attempt = 0
+	newState.dices = [null, null, null, null, null]
+	return newState
+}
+
+const registry = {
+	"ROLL": {
+		fn: roll,
+		shape: {
+			player: [isString],
+			dices: [
+				ds => Array.isArray(ds),
+				ds => ds.every(isValidDice),
+				ds => ds.length >= 1 && ds.length <= 5,
+			],
+		},
+	},
+	"SELECT": {
+		fn: select,
+		shape: {
+			player: [isString],
+			dices: [
+				ds => Array.isArray(ds),
+				ds => ds.length === 5,
+				ds => ds.every(isValidSelection),
+				ds => ds.some(d => d === null)
+			],
+		},
+	},
+	"RECORD": {
+		fn: record,
+		shape: {
+			player: [isString],
+			category: [c => Object.keys(createScorecard()).includes(c)],
+		},
+	},
+}
+
+const reduce = (state, action) => {
+	const r = registry[action.type]
+	if (!r || !isOfShape(r.shape, action)) {
+		throw "BAD_ACTION"
+	}
+	return r.fn(state, action)
+}
+
+module.exports = {
+	reduce, init
 }
