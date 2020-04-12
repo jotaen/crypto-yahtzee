@@ -1,5 +1,6 @@
 const { hash, isHash } = require("./hash")
 const { sign, verify } = require("./rsa")
+const { assert } = require("../lib/util")
 
 const freeze = block => Object.freeze({
 	...block,
@@ -23,32 +24,28 @@ class Blockchain {
 	}
 
 	commit(block) {
-		if (this._stagedBlock === null) {
-			throw "NO_BLOCK_STAGED"
-		}
+		;[
+			["NO_BLOCK_STAGED", () => this._stagedBlock === null],
+		].forEach(assert)
+
 		this._blockchain.push(this._stagedBlock)
 		this._stagedBlock = null
 	}
 
 	stageForeignBlock(state, block) {
-		if (block.precedingBlock !== hash(this.latestBlock())) {
-			throw "INCOMPATIBLE_BLOCK"
-		}
-		if (! isValidFormat(block)) {
-			throw "MALFORMED_BLOCK"
-		}
-		if (! verify(block, this._participants[block.author])) {
-			throw "INVALID_SIGNATURE"
-		}
-		if (hash(state) !== block.state) {
-			throw "INCOMPATIBLE_STATE"
-		}
+		;[
+			["INCOMPATIBLE_BLOCK", () => block.precedingBlock !== this.latestHash()],
+			["MALFORMED_BLOCK", () => ! isValidFormat(block)],
+			["INVALID_SIGNATURE", () => ! verify(block, this._participants[block.author])],
+			["INCOMPATIBLE_STATE", () => hash(state) !== block.state],
+		].forEach(assert)
+
 		this._stagedBlock = block
 	}
 
 	stageOwnBlock(state, payload) {
 		const block = {
-			precedingBlock: hash(this.latestBlock()),
+			precedingBlock: this.latestHash(),
 			state: hash(state),
 			author: hash(this._publicKey),
 			payload: payload,
@@ -56,6 +53,10 @@ class Blockchain {
 		}
 		block.signature = sign(block, this._privateKey)
 		this._stagedBlock = freeze(block)
+	}
+
+	latestHash() {
+		return hash(this.latestBlock())
 	}
 
 	latestBlock() {
