@@ -1,37 +1,34 @@
 const { createStore } = require("redux")
-const randomiser = require("./crypto/randomiser")
-const yahtzee = require("./yahtzee/yahtzee")
+const { DiceCup } = require("./crypto/dicecup")
+const { Yahtzee } = require("./yahtzee/yahtzee")
 
 class Game {
 	constructor(players, onRequest) {
-		this._stateMachine = StateMachine(players)
+		this._storeMachine = StoreMachine(players)
 	}
 
 	dispatch(action) {
-		const store = this._stateMachine.next().value
+		const store = this._storeMachine.next().value
 		store.dispatch(action)
 		// TODO request user action via `onRequest`
 	}
 }
 
-function* StateMachine(players) {
-	const opening = createStore(randomiser.process, randomiser.init(1, players))
-	while(!randomiser.isComplete(opening.getState())) {
+function* StoreMachine(players) {
+	const opening = new DiceCup(1, players)
+	while(!opening.isRolled()) {
 		yield opening
 	}
 
-	const table = createStore(yahtzee.process, yahtzee.init(players))
-	while(table.getState().onTurn !== null) {
-		if (yahtzee.isRolling(table.getState())) {
-			const shaker = createStore(
-				randomiser.process,
-				randomiser.init(yahtzee.countRollers(table.getState()), players)
-			)
-			while(!randomiser.isComplete(shaker.getState())) {
-				yield shaker
+	const yahtzee = new Yahtzee(players)
+	while(yahtzee.isOngoing()) {
+		if (yahtzee.rollingDices() > 0) {
+			const diceCup = new DiceCup(yahtzee.rollingDices(), players)
+			while(!diceCup.isRolled()) {
+				yield diceCup
 			}
 		}
-		yield table
+		yield yahtzee
 	}
 
 	return null

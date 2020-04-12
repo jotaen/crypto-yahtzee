@@ -1,14 +1,6 @@
 const { createScorecard, count, isFilledUp } = require("./scorecard")
-const { route } = require("../lib/redux")
+const { Store } = require("../lib/store")
 const { isString, deepClone, isSubset, assert } = require("../lib/util")
-
-const init = (players) => ({
-	players: players,
-	onTurn: 0,
-	attempt: 0,
-	dices: [null, null, null, null, null],
-	scorecards: players.map(() => createScorecard()),
-})
 
 const roll = (state, { player, dices }) => {
 	const rollers = state.dices.filter(d => d === null)
@@ -53,11 +45,7 @@ const isValidDice = d => [1, 2, 3, 4, 5, 6].includes(d)
 
 const isValidSelection = s => [1, 2, 3, 4, 5, 6, null].includes(s)
 
-const isRolling = state => state.dices.some(d => d === null)
-
-const countRollers = state => state.dices.filter(d => d === null).length
-
-const process = route({
+const routes = {
 	"ROLL": {
 		fn: roll,
 		shape: {
@@ -88,8 +76,33 @@ const process = route({
 			category: [c => Object.keys(createScorecard()).includes(c)],
 		},
 	},
-})
+}
+
+class Yahtzee extends Store {
+	constructor(players) {
+		super(routes, {
+			players: players,
+			onTurn: 0,
+			attempt: 0,
+			dices: [null, null, null, null, null],
+			scorecards: players.map(() => createScorecard()),
+		})
+	}
+
+	isOngoing() {
+		return this._store.getState().onTurn !== null
+	}
+
+	scorecard(player) {
+		const pid = this._store.getState().players.indexOf(player)
+		return this._store.getState().scorecards[pid]
+	}
+
+	rollingDices() {
+		return this._store.getState().dices.filter(d => d === null).length
+	}
+}
 
 module.exports = {
-	process, init, isRolling, countRollers
+	Yahtzee
 }

@@ -1,15 +1,8 @@
 const { hash, isHexString, isHash } = require("./hash")
-const { route } = require("../lib/redux")
+const { Store } = require("../lib/store")
 const { isString, assert, deepClone } = require("../lib/util")
 
 const VALUE_STRING_LENGTH = 8 // 32 bit hex value
-
-const init = (arity, players) => ({
-	players: players,
-	arity: arity,
-	hashes: players.map(() => null),
-	values: players.map(() => null),
-})
 
 const submitHashes = (state, { player, hashes }) => {
 	const pid = state.players.indexOf(player)
@@ -37,7 +30,7 @@ const submitValues = (state, { player, values }) => {
 	return newState
 }
 
-const process = route({
+const routes = {
 	"SEED_HASHES": {
 		fn: submitHashes,
 		shape: {
@@ -58,23 +51,35 @@ const process = route({
 			],
 		},
 	},
-})
-
-const isComplete = state => {
-	return state.hashes.every(h => h !== null) && state.values.every(h => h !== null)
 }
 
-const retrieveNumbers = state => {
-	if (!isComplete(state)) {
-		throw "INPUT_NOT_COMPLETE_YET"
+class DiceCup extends Store {
+	constructor(arity, players) {
+		super(routes, {
+			players: players,
+			arity: arity,
+			hashes: players.map(() => null),
+			values: players.map(() => null),
+		})
 	}
 
-	return Array.from(Array(state.arity))
-		.map((_, i) => state.values
-				.map(vs => vs[i])
-				.map(v => parseInt(v, 16))
-				.reduce((a, c) => a ^ c, 0)
-		)
+	isRolled() {
+		return this._store.getState().hashes.every(h => h !== null) &&
+			this._store.getState().values.every(h => h !== null)
+	}
+
+	retrieveNumbers() {
+		if (!this.isRolled()) {
+			throw "INPUT_NOT_COMPLETE_YET"
+		}
+
+		return Array.from(Array(this._store.getState().arity))
+			.map((_, i) => this._store.getState().values
+					.map(vs => vs[i])
+					.map(v => parseInt(v, 16))
+					.reduce((a, c) => a ^ c, 0)
+			)
+	}
 }
 
 // Generates 32-bit random numbers with corresponding hash
@@ -91,5 +96,5 @@ const random = () => {
 }
 
 module.exports = {
-	isComplete, retrieveNumbers, process, random, init
+	DiceCup, random
 }

@@ -1,5 +1,5 @@
 const { Game } = require("./game")
-const { random } = require("./crypto/randomiser")
+const { random } = require("./crypto/dicecup")
 
 describe("[Game]", () => {
 	it("handles the entire game flow", () => {

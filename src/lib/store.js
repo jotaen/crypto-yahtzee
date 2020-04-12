@@ -1,3 +1,4 @@
+const { createStore } = require("redux")
 const { isString } = require("./util")
 
 const isOfShape = (shape, action) => {
@@ -14,19 +15,25 @@ const defaultRoute = {
 	fn: state => state,
 	shape: {},
 }
-const route = registry => (state, action) => {
-	const r = registry[action.type] || defaultRoute
+
+const route = routes => (state, action) => {
+	const r = routes[action.type] || defaultRoute
 	if (!isOfShape(r.shape, action)) {
 		throw "BAD_ACTION"
 	}
 	return r.fn(state, action)
 }
 
-const flow = state => ({
-	then: fn => flow(fn(state)),
-	peak: fn => { fn(state); return flow(state); },
-})
+class Store {
+	constructor(routes, initialState) {
+		this._store = createStore(route(routes), initialState)
+	}
+
+	dispatch(action) {
+		return this._store.dispatch(action)
+	}
+}
 
 module.exports = {
-	route, flow
+	Store
 }
