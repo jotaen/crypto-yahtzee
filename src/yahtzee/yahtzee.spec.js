@@ -1,8 +1,8 @@
 const assert = require("assert")
-const { init, process } = require("./game")
+const { init, process } = require("./yahtzee")
 const { flow } = require("../lib/redux")
 
-describe("[Game] Initialisation", () => {
+describe("[Yahtzee] Initialisation", () => {
 	it("creates empty default state", () => {
 		const s = init(["joe", "lisa", "mike"])
 		assert.deepStrictEqual(s, {
@@ -25,7 +25,7 @@ describe("[Game] Initialisation", () => {
 	})
 })
 
-describe("[Game] Selecting", () => {
+describe("[Yahtzee] Selecting", () => {
 	it("rejects selecting on first attempt", () => {
 		const s = init(["joe", "lisa"])
 
@@ -71,7 +71,7 @@ describe("[Game] Selecting", () => {
 	})
 })
 
-describe("[Game] Rolling", () => {
+describe("[Yahtzee] Rolling", () => {
 	it("takes over the rolls of a player", () => {
 		flow(init(["joe", "lisa"]))
 			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] }))
@@ -136,7 +136,7 @@ describe("[Game] Rolling", () => {
 	})
 })
 
-describe("[Game] Recording", () => {
+describe("[Yahtzee] Recording", () => {
 	it("scores dices for individual players", () => {
 		flow(init(["joe", "lisa"]))
 			// player 0:
@@ -191,7 +191,7 @@ describe("[Game] Recording", () => {
 	})
 })
 
-describe("[Game] Game play", () => {
+describe("[Yahtzee] Taking turns", () => {
 	it("advances to next player after record and cleans up", () => {
 		flow(init(["joe", "lisa"]))
 			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 3, 2, 1, 2] }))
@@ -267,7 +267,7 @@ describe("[Game] Game play", () => {
 	})
 })
 
-describe("[Game] Integration test", () => {
+describe("[Yahtzee] Integration test", () => {
 	it("works across a whole series of actions", () => {
 		flow(init(["joe", "lisa"]))
 			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))

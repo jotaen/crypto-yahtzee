@@ -53,6 +53,10 @@ const isValidDice = d => [1, 2, 3, 4, 5, 6].includes(d)
 
 const isValidSelection = s => [1, 2, 3, 4, 5, 6, null].includes(s)
 
+const isRolling = state => state.dices.some(d => d === null)
+
+const countRollers = state => state.dices.filter(d => d === null).length
+
 const process = route({
 	"ROLL": {
 		fn: roll,
@@ -87,5 +91,5 @@ const process = route({
 })
 
 module.exports = {
-	process, init
+	process, init, isRolling, countRollers
 }

@@ -10,9 +10,13 @@ const isOfShape = (shape, action) => {
 	return isValid && hasSameLength
 }
 
+const defaultRoute = {
+	fn: state => state,
+	shape: {},
+}
 const route = registry => (state, action) => {
-	const r = registry[action.type]
-	if (!r || !isOfShape(r.shape, action)) {
+	const r = registry[action.type] || defaultRoute
+	if (!isOfShape(r.shape, action)) {
 		throw "BAD_ACTION"
 	}
 	return r.fn(state, action)
