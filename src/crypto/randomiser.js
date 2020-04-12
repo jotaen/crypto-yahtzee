@@ -46,10 +46,20 @@ class ConcertedRandomiser {
 	}
 
 	submitValues(participant, values) {
+		if (Object.values(this._entries).some(e => e.hashes === null)) {
+			throw "NO_HASH_SUBMITTED_YET"
+		}
 		this._submit("values", isHexString(VALUE_STRING_LENGTH), participant, values)
 	}
 
+	isComplete() {
+		return Object.values(this._entries).every(e => e.hashes !== null && e.values !== null)
+	}
+
 	retrieveNumbers() {
+		if (!this.isComplete()) {
+			throw "INPUT_NOT_COMPLETE_YET"
+		}
 		const allValues = Object.values(this._entries)
 			.map(e => e.values)
 
