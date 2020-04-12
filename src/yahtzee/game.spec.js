@@ -1,10 +1,6 @@
 const assert = require("assert")
 const { init, process } = require("./game")
-
-const flow = game => ({
-	then: fn => flow(fn(game)),
-	peak: fn => { fn(game); return flow(game); },
-})
+const { flow } = require("../lib/redux")
 
 describe("[Game] Initialisation", () => {
 	it("creates empty default state", () => {

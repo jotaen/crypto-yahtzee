@@ -1,138 +1,141 @@
 const assert = require("assert")
+const { flow } = require("../lib/redux")
 const { isHash, isHexString } = require("./hash")
-const { ConcertedRandomiser, random } = require("./randomiser")
+const { isComplete, retrieveNumbers, process, random, init } = require("./randomiser")
 
 describe("[Randomiser] Generation", () => {
 	it("calculates a random value based on the values of every player", () => {
-		const s = new ConcertedRandomiser(5, ["ALICE", "BOB", "CHRIS"])
 		const alice = [random(), random(), random(), random(), random()]
 		const bob = [random(), random(), random(), random(), random()]
 		const chris = [random(), random(), random(), random(), random()]
 
-		s.submitHashes("ALICE", alice.map(r => r.hash))
-		s.submitHashes("BOB", bob.map(r => r.hash))
-		s.submitHashes("CHRIS", chris.map(r => r.hash))
+		flow(init(5, ["ALICE", "BOB", "CHRIS"]))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: alice.map(r => r.hash) }))
+			.then(s => process(s, { type: "SEED_HASHES", player: "BOB", hashes: bob.map(r => r.hash) }))
+			.then(s => process(s, { type: "SEED_HASHES", player: "CHRIS", hashes: chris.map(r => r.hash) }))
+			.then(s => process(s, { type: "SEED_VALUES", player: "ALICE", values: alice.map(r => r.value) }))
+			.then(s => process(s, { type: "SEED_VALUES", player: "BOB", values: bob.map(r => r.value) }))
+			.peak(s => assert.strictEqual(isComplete(s), false))
+			.then(s => process(s, { type: "SEED_VALUES", player: "CHRIS", values: chris.map(r => r.value) }))
+			.peak(s => assert.strictEqual(isComplete(s), true))
+			.peak(s => assert.strictEqual(retrieveNumbers(s).length, 5))
+			.peak(s => assert.strictEqual(retrieveNumbers(s).every(n => Number.isInteger(n)), true))
 
-		s.submitValues("ALICE", alice.map(r => r.value))
-		s.submitValues("BOB", bob.map(r => r.value))
-		s.submitValues("CHRIS", chris.map(r => r.value))
-
-		assert.strictEqual(s.retrieveNumbers().length, 5)
-		assert.strictEqual(s.retrieveNumbers().every(n => Number.isInteger(n)), true)
-	})
-
-	it("returns result when data is complete", () => {
-		const s = new ConcertedRandomiser(2, ["ALICE", "BOB"])
-		s.submitHashes("ALICE", [
-			"fbd0ed2087be3dafb52fd873c8a30a83cdd347c173c752b9fb31897f07ebc76d",
-			"deab94ad3fef33bfac696c5fa5a507044d8ae4138d07a96618caf990f5fba66c"
-		])
-		s.submitHashes("BOB", [
-			"5f53131e72425adfb6a007f61309deeb11ccfa06f0156703079c855e995bd71b",
-			"b736994617eb6d9a573342120f383686447dad1688fb25838dc674ca29b83687"
-		])
-		s.submitValues("ALICE", ["6b2df804", "02713fef"])
-		s.submitValues("BOB", ["7d6d2b55", "bc0150fb"])
-		assert.deepStrictEqual(s.retrieveNumbers(), [373347153, -1099927788])
+		flow(init(2, ["ALICE", "BOB"]))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [
+				"fbd0ed2087be3dafb52fd873c8a30a83cdd347c173c752b9fb31897f07ebc76d",
+				"deab94ad3fef33bfac696c5fa5a507044d8ae4138d07a96618caf990f5fba66c"
+			] }))
+			.then(s => process(s, { type: "SEED_HASHES", player: "BOB", hashes: [
+				"5f53131e72425adfb6a007f61309deeb11ccfa06f0156703079c855e995bd71b",
+				"b736994617eb6d9a573342120f383686447dad1688fb25838dc674ca29b83687"
+			] }))
+			.then(s => process(s, { type: "SEED_VALUES", player: "ALICE", values: ["6b2df804", "02713fef"] }))
+			.peak(s => assert.strictEqual(isComplete(s), false))
+			.then(s => process(s, { type: "SEED_VALUES", player: "BOB", values: ["7d6d2b55", "bc0150fb"] }))
+			.peak(s => assert.strictEqual(isComplete(s), true))
+			.peak(s => assert.deepStrictEqual(retrieveNumbers(s), [373347153, -1099927788]))
 	})
 
 	it("cannot overwrite values", () => {
-		const s = new ConcertedRandomiser(1, ["ALICE"])
 		const alice = random()
-		s.submitHashes("ALICE", [alice.hash])
-		s.submitValues("ALICE", [alice.value])
-		assert.throws(
-			() => s.submitHashes("ALICE", [random().hash]),
-			e => e === "ALREADY_SUBMITTED"
-		)
-		assert.throws(
-			() => s.submitValues("ALICE", [random().value]),
-			e => e === "ALREADY_SUBMITTED"
-		)
+		flow(init(1, ["ALICE"]))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [alice.hash] }))
+			.then(s => process(s, { type: "SEED_VALUES", player: "ALICE", values: [alice.value] }))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [random().hash] }),
+				e => e === "ALREADY_SUBMITTED"
+			))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "ALICE", values: [random().value] }),
+				e => e === "ALREADY_SUBMITTED"
+			))
 	})
 
 	it("rejects formally incorrect values/types", () => {
-		const s = new ConcertedRandomiser(3, ["ALICE"])
-		assert.throws(
-			() => s.submitHashes("ALICE", ["", "!*&^TGAIS*F&", 2127]),
-			e => e === "MALFORMED_VALUE"
-		)
-		s.submitHashes("ALICE", [random().hash, random().hash, random().hash])
-		assert.throws(
-			() => s.submitValues("ALICE", ["", "*&T@*&UR!SFS", 5123]),
-			e => e === "MALFORMED_VALUE"
-		)
+		flow(init(3, ["ALICE"]))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: ["", "!*&^TGAIS*F&", 2127] }),
+				e => e === "BAD_ACTION"
+			))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "ALICE", values: ["", "*&T@*&UR!SFS", 5123] }),
+				e => e === "BAD_ACTION"
+			))
 	})
 
 	it("cannot submit data for non-participant", () => {
-		const s = new ConcertedRandomiser(2, ["ALICE"])
-		assert.throws(
-			() => s.submitHashes("MALICIOUS", [random().hash, random().hash]),
-			e => e === "NOT_PARTICIPANT"
-		)
-		s.submitHashes("ALICE", [random().hash, random().hash])
-		assert.throws(
-			() => s.submitValues("MALICIOUS", [random().value, random().value]),
-			e => e === "NOT_PARTICIPANT"
-		)
+		flow(init(2, ["ALICE"]))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_HASHES", player: "A*&FS^&A*G", hashes: [random().hash, random().hash] }),
+				e => e === "NOT_PARTICIPANT"
+			))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "A*&FS^&A*G", values: [random().value, random().value] }),
+				e => e === "NOT_PARTICIPANT"
+			))
 	})
 
 	it("collects hashes before values", () => {
-		const s = new ConcertedRandomiser(2, ["ALICE", "BOB", "CHRIS"])
-		assert.throws(
-			() => s.submitValues("ALICE", [random().value, random().value]),
-			e => e === "NO_HASH_SUBMITTED_YET"
-		)
+		flow(init(1, ["ALICE", "BOB"]))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "ALICE", values: [random().value] }),
+				e => e === "HASHES_NOT_COMPLETE_YET"
+			))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "BOB", values: [random().value] }),
+				e => e === "HASHES_NOT_COMPLETE_YET"
+			))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [random().hash] }))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "ALICE", values: [random().value] }),
+				e => e === "HASHES_NOT_COMPLETE_YET"
+			))
 	})
 
 	it("rejects adding hashes/values with wrong type/arity", () => {
-		const s = new ConcertedRandomiser(3, ["ALICE"])
-		s.submitHashes("ALICE", [random().hash, random().hash, random().hash])
+		const s0 = init(1, ["ALICE"])
+		const s = process(s0, { type: "SEED_HASHES", player: "ALICE", hashes: [random().hash] })
 
 		;[
-			null,
-			"aced120",
 			[],
-			["aced120", "aced120"],
-			["aced120", "aced120", "aced120", "aced120"],
-		].forEach(t => {
-			assert.throws(
-				() => s.submitHashes("ALICE", t),
-				e => e === "WRONG_ARITY"
-			)
-			assert.throws(
-				() => s.submitValues("ALICE", t),
-				e => e === "WRONG_ARITY"
-			)
-		})
+			[random().hash, random().hash],
+			[random().hash, random().hash, random().hash, random().hash],
+		].forEach(t => assert.throws(
+			() => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: t }),
+			e => e === "WRONG_ARITY"
+		))
+
+		;[
+			[],
+			[random().value, random().value],
+			[random().value, random().value, random().value, random().value],
+		].forEach(t => assert.throws(
+			() => process(s, { type: "SEED_VALUES", player: "ALICE", values: t }),
+			e => e === "WRONG_ARITY"
+		))
 	})
 
 	it("checks for value integrity", () => {
-		const s = new ConcertedRandomiser(1, ["ALICE"])
-		const alice = random()
-		const evil = random()
-		s.submitHashes("ALICE", [alice.hash])
-		assert.throws(
-			() => s.submitValues("ALICE", [evil.value]),
-			e => e === "HASH_VALUE_MISMATCH"
-		)
+		flow(init(1, ["ALICE"]))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [random().hash] }))
+			.peak(s => assert.throws(
+				() => process(s, { type: "SEED_VALUES", player: "ALICE", values: [random().value] }),
+				e => e === "HASH_VALUE_MISMATCH"
+			))
 	})
 
-	it("only returns result when inputs are complete", () => {
-		const s = new ConcertedRandomiser(1, ["ALICE", "BOB"])
+	it("doesn’t return result when input is not complete", () => {
 		const alice = random()
 		const bob = random()
-		s.submitHashes("ALICE", [alice.hash])
-		s.submitHashes("BOB", [bob.hash])
-		s.submitValues("ALICE", [alice.value])
-		assert.strictEqual(s.isComplete(), false)
-		assert.throws(
-			() => s.retrieveNumbers(),
-			e => e === "INPUT_NOT_COMPLETE_YET"
-		)
-
-		s.submitValues("BOB", [bob.value])
-		assert.strictEqual(s.isComplete(), true)
+		flow(init(1, ["ALICE", "BOB"]))
+			.then(s => process(s, { type: "SEED_HASHES", player: "ALICE", hashes: [alice.hash] }))
+			.then(s => process(s, { type: "SEED_HASHES", player: "BOB", hashes: [bob.hash] }))
+			.then(s => process(s, { type: "SEED_VALUES", player: "ALICE", values: [alice.value] }))
+			.peak(s => assert.throws(
+				() => retrieveNumbers(s),
+				e => e === "INPUT_NOT_COMPLETE_YET"
+			))
 	})
 })
 
@@ -161,7 +164,7 @@ describe.skip("[Randomiser] Integration test", () => {
 		const iterations = 99999
 		for (let i=0; i<iterations; i++) {
 			const participants = ["ALICE", "BOB"]
-			const cr = new ConcertedRandomiser(1, participants)
+			const cr = init(1, participants)
 			participants
 				.map((p) => ({ p: p, r: random() }))
 				.forEach(x => {

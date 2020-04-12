@@ -1,75 +1,80 @@
 const { hash, isHexString, isHash } = require("./hash")
-
-const isOkay = entry => {
-	if (!entry.hashes || !entry.values) {
-		return true
-	}
-	if (entry.values.every((v, i) => entry.hashes[i] === hash(v))) {
-		return true
-	}
-	return false
-}
+const { route } = require("../lib/redux")
+const { isString, assert, deepClone } = require("../lib/util")
 
 const VALUE_STRING_LENGTH = 8 // 32 bit hex value
 
-class ConcertedRandomiser {
-	constructor(arity, participants) {
-		this._arity = arity
-		this._entries = participants.reduce((a, c) => {
-			a[c] = { hashes: null, values: null }
-			return a
-		}, {})
+const init = (arity, players) => ({
+	players: players,
+	arity: arity,
+	hashes: players.map(() => null),
+	values: players.map(() => null),
+})
+
+const submitHashes = (state, { player, hashes }) => {
+	const pid = state.players.indexOf(player)
+	;[
+		["NOT_PARTICIPANT", () => pid === -1],
+		["WRONG_ARITY", () => hashes.length !== state.arity],
+		["ALREADY_SUBMITTED", () => state.hashes[pid] !== null],
+	].forEach(assert)
+	const newState = deepClone(state)
+	newState.hashes[pid] = hashes
+	return newState
+}
+
+const submitValues = (state, { player, values }) => {
+	const pid = state.players.indexOf(player)
+	;[
+		["NOT_PARTICIPANT", () => pid === -1],
+		["WRONG_ARITY", () => values.length !== state.arity],
+		["HASHES_NOT_COMPLETE_YET", () => state.hashes.some(hs => hs === null)],
+		["ALREADY_SUBMITTED", () => state.values[pid] !== null],
+		["HASH_VALUE_MISMATCH", () => values.every((v, i) => state.hashes[pid][i] !== hash(v))],
+	].forEach(assert)
+	const newState = deepClone(state)
+	newState.values[pid] = values
+	return newState
+}
+
+const process = route({
+	"SEED_HASHES": {
+		fn: submitHashes,
+		shape: {
+			player: [isString],
+			hashes: [
+				hs => Array.isArray(hs),
+				hs => hs.every(isHash),
+			],
+		},
+	},
+	"SEED_VALUES": {
+		fn: submitValues,
+		shape: {
+			player: [isString],
+			values: [
+				hs => Array.isArray(hs),
+				hs => hs.every(isHexString(VALUE_STRING_LENGTH)),
+			],
+		},
+	},
+})
+
+const isComplete = state => {
+	return state.hashes.every(h => h !== null) && state.values.every(h => h !== null)
+}
+
+const retrieveNumbers = state => {
+	if (!isComplete(state)) {
+		throw "INPUT_NOT_COMPLETE_YET"
 	}
 
-	_submit(kind, validate, participant, ds) {
-		if (!Array.isArray(ds) || ds.length !== this._arity) {
-			throw "WRONG_ARITY"
-		}
-		if (!ds.every(validate)) {
-			throw "MALFORMED_VALUE"
-		}
-		if (! (participant in this._entries)) {
-			throw "NOT_PARTICIPANT"
-		}
-		if (this._entries[participant][kind] !== null) {
-			throw "ALREADY_SUBMITTED"
-		}
-		const candidate = { ...this._entries[participant], [kind]: ds }
-		if (!isOkay(candidate)) {
-			throw "HASH_VALUE_MISMATCH"
-		}
-		this._entries[participant] = candidate
-	}
-
-	submitHashes(participant, hashes) {
-		this._submit("hashes", isHash, participant, hashes)
-	}
-
-	submitValues(participant, values) {
-		if (Object.values(this._entries).some(e => e.hashes === null)) {
-			throw "NO_HASH_SUBMITTED_YET"
-		}
-		this._submit("values", isHexString(VALUE_STRING_LENGTH), participant, values)
-	}
-
-	isComplete() {
-		return Object.values(this._entries).every(e => e.hashes !== null && e.values !== null)
-	}
-
-	retrieveNumbers() {
-		if (!this.isComplete()) {
-			throw "INPUT_NOT_COMPLETE_YET"
-		}
-		const allValues = Object.values(this._entries)
-			.map(e => e.values)
-
-		return Array.from(Array(this._arity))
-			.map((_, i) => allValues
-					.map(vs => vs[i])
-					.map(v => parseInt(v, 16))
-					.reduce((a, c) => a ^ c, 0)
-			)
-	}
+	return Array.from(Array(state.arity))
+		.map((_, i) => state.values
+				.map(vs => vs[i])
+				.map(v => parseInt(v, 16))
+				.reduce((a, c) => a ^ c, 0)
+		)
 }
 
 // Generates 32-bit random numbers with corresponding hash
@@ -86,5 +91,5 @@ const random = () => {
 }
 
 module.exports = {
-	ConcertedRandomiser, random
+	isComplete, retrieveNumbers, process, random, init
 }

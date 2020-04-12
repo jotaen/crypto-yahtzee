@@ -18,6 +18,11 @@ const route = registry => (state, action) => {
 	return r.fn(state, action)
 }
 
+const flow = state => ({
+	then: fn => flow(fn(state)),
+	peak: fn => { fn(state); return flow(state); },
+})
+
 module.exports = {
-	route
+	route, flow
 }
