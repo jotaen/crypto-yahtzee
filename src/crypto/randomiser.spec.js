@@ -1,5 +1,6 @@
 const assert = require("assert")
-const { ConcertedRandomiser, random, VALUE_STRING_LENGTH } = require("./randomiser")
+const { isHash, isHexString } = require("./hash")
+const { ConcertedRandomiser, random } = require("./randomiser")
 
 describe("[Randomiser] Generation", () => {
 	it("calculates a random value based on the values of every player", () => {
@@ -138,10 +139,8 @@ describe("[Randomiser] Generation", () => {
 describe("[Randomiser] random()", () => {
 	it("generates bit sequences as string of specified length", () => {
 		const r = random()
-		assert.strictEqual(r.hash.length, 64)
-		assert.strictEqual(/^[a-f0-9]*$/.test(r.hash), true)
-		assert.strictEqual(r.value.length, VALUE_STRING_LENGTH)
-		assert.strictEqual(/^[a-f0-9]*$/.test(r.value), true)
+		assert.strictEqual(isHash(r.hash), true)
+		assert.strictEqual(isHexString(8)(r.value), true)
 	})
 
 	it("yields different outputs every time", () => {

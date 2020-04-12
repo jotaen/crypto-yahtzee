@@ -86,5 +86,5 @@ const random = () => {
 }
 
 module.exports = {
-	ConcertedRandomiser, random, VALUE_STRING_LENGTH
+	ConcertedRandomiser, random
 }
