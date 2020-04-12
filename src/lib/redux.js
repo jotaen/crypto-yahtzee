@@ -10,6 +10,14 @@ const isOfShape = (shape, action) => {
 	return isValid && hasSameLength
 }
 
+const route = registry => (state, action) => {
+	const r = registry[action.type]
+	if (!r || !isOfShape(r.shape, action)) {
+		throw "BAD_ACTION"
+	}
+	return r.fn(state, action)
+}
+
 module.exports = {
-	isOfShape
+	route
 }

@@ -1,5 +1,5 @@
 const { createScorecard, count, isFilledUp } = require("./scorecard")
-const { isOfShape } = require("../lib/redux")
+const { route } = require("../lib/redux")
 const { isString, deepClone, isSubset, assert } = require("../lib/util")
 
 const init = (players) => ({
@@ -53,7 +53,7 @@ const isValidDice = d => [1, 2, 3, 4, 5, 6].includes(d)
 
 const isValidSelection = s => [1, 2, 3, 4, 5, 6, null].includes(s)
 
-const registry = {
+const process = route({
 	"ROLL": {
 		fn: roll,
 		shape: {
@@ -84,16 +84,8 @@ const registry = {
 			category: [c => Object.keys(createScorecard()).includes(c)],
 		},
 	},
-}
-
-const reduce = (state, action) => {
-	const r = registry[action.type]
-	if (!r || !isOfShape(r.shape, action)) {
-		throw "BAD_ACTION"
-	}
-	return r.fn(state, action)
-}
+})
 
 module.exports = {
-	reduce, init
+	process, init
 }

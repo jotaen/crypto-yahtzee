@@ -1,5 +1,5 @@
 const assert = require("assert")
-const { init, reduce } = require("./game")
+const { init, process } = require("./game")
 
 const flow = game => ({
 	then: fn => flow(fn(game)),
@@ -34,14 +34,14 @@ describe("[Game] Selecting", () => {
 		const s = init(["joe", "lisa"])
 
 		assert.throws(
-			() => reduce(s, { type: "SELECT", player: "joe", dices: [null, null, null, null, null] }),
+			() => process(s, { type: "SELECT", player: "joe", dices: [null, null, null, null, null] }),
 			e => e === "ALREADY_SELECTED"
 		)
 	})
 
 	it("rejects invalid selections", () => {
 		const s0 = init(["joe", "lisa"])
-		const s = reduce(s0, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] })
+		const s = process(s0, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] })
 
 		;[
 			[], // none
@@ -52,7 +52,7 @@ describe("[Game] Selecting", () => {
 			[1, 2, 5, {}, true] // nonsense values
 		].forEach(ds => {
 			assert.throws(
-				() => reduce(s, { type: "SELECT", player: "joe", dices: ds }), 
+				() => process(s, { type: "SELECT", player: "joe", dices: ds }), 
 				e => e === "BAD_ACTION"
 			)
 		})
@@ -60,7 +60,7 @@ describe("[Game] Selecting", () => {
 
 	it("rejects incompatible selections (e.g. with made-up values)", () => {
 		const s0 = init(["joe", "lisa"])
-		const s = reduce(s0, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] })
+		const s = process(s0, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] })
 
 		;[
 			[6, 6, null, null, null],
@@ -68,7 +68,7 @@ describe("[Game] Selecting", () => {
 			[2, 4, 1, 1, null],
 		].forEach(ds => {
 			assert.throws(
-				() => reduce(s, { type: "SELECT", player: "joe", dices: ds }), 
+				() => process(s, { type: "SELECT", player: "joe", dices: ds }), 
 				e => e === "INCOMPATIBLE_SELECTION"
 			)
 		})
@@ -78,19 +78,19 @@ describe("[Game] Selecting", () => {
 describe("[Game] Rolling", () => {
 	it("takes over the rolls of a player", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] }))
 			.peak(s => {
 				assert.strictEqual(s.attempt, 1)
 				assert.deepStrictEqual(s.dices, [1, 2, 4, 5, 6])
 			})
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [6, null, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 5, 6, 1] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [6, null, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 5, 6, 1] }))
 			.peak(s => {
 				assert.strictEqual(s.attempt, 2)
 				assert.deepStrictEqual(s.dices, [1, 3, 5, 6, 6])
 			})
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [6, null, 6, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [1, 6, 2] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [6, null, 6, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 6, 2] }))
 			.peak(s => {
 				assert.strictEqual(s.attempt, 3)
 				assert.deepStrictEqual(s.dices, [1, 2, 6, 6, 6])
@@ -99,24 +99,24 @@ describe("[Game] Rolling", () => {
 
 	it("rejects a roll if no dices have been selected (except first attempt)", () => {
 		const s0 = init(["joe", "lisa"])
-		const s = reduce(s0, { type: "ROLL", player: "joe", dices: [2, 5, 4, 2, 3] })
+		const s = process(s0, { type: "ROLL", player: "joe", dices: [2, 5, 4, 2, 3] })
 		assert.throws(
-			() => reduce(s, { type: "ROLL", player: "joe", dices: [6, 6, 6, 6, 6] }),
+			() => process(s, { type: "ROLL", player: "joe", dices: [6, 6, 6, 6, 6] }),
 			e => e === "NO_DICES_SELECTED"
 		)
 	})
 
 	it("rejects rolling more|less dices than have been selected", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [2, 4, null, 5, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 4, 1, 5, 6] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [2, 4, null, 5, null] }))
 			.then(s => {
 				assert.throws(
-					() => reduce(s, { type: "ROLL", player: "joe", dices: [5, 5, 5] }),
+					() => process(s, { type: "ROLL", player: "joe", dices: [5, 5, 5] }),
 					e => e === "INVALID_ROLL"
 				)
 				assert.throws(
-					() => reduce(s, { type: "ROLL", player: "joe", dices: [5] }),
+					() => process(s, { type: "ROLL", player: "joe", dices: [5] }),
 					e => e === "INVALID_ROLL"
 				)
 			})
@@ -133,7 +133,7 @@ describe("[Game] Rolling", () => {
 			[2, 4, 5, {}, false] // nonsense values
 		].forEach(ds => {
 			assert.throws(
-				() => reduce(s, { type: "ROLL", player: "joe", dices: ds }), 
+				() => process(s, { type: "ROLL", player: "joe", dices: ds }), 
 				e => e === "BAD_ACTION"
 			)
 		})
@@ -144,19 +144,19 @@ describe("[Game] Recording", () => {
 	it("scores dices for individual players", () => {
 		flow(init(["joe", "lisa"]))
 			// player 0:
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 5, 3, 2, 2] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "twos" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 5, 3, 2, 2] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "twos" }))
 			.peak(s => assert.strictEqual(s.scorecards[0].twos, 6))
 			// player 1:
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [1, 2, 3, 4, 5] }))
-			.then(s => reduce(s, { type: "RECORD", player: "lisa", category: "largeStraight" }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [1, 2, 3, 4, 5] }))
+			.then(s => process(s, { type: "RECORD", player: "lisa", category: "largeStraight" }))
 			.peak(s => assert.strictEqual(s.scorecards[1].largeStraight, 40))
 	})
 
 	it("can cross out", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 5, 3, 2, 2] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "yahtzee" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 5, 3, 2, 2] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "yahtzee" }))
 			.peak(s => assert.strictEqual(s.scorecards[0].yahtzee, 0))		
 	})
 
@@ -166,10 +166,10 @@ describe("[Game] Recording", () => {
 				s.scorecards[s.onTurn].threeOfAKind = 21
 				return s
 			})
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 4, 4, 4, 1] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 4, 4, 4, 1] }))
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "RECORD", player: "joe", category: "threeOfAKind" }),
+					() => process(s, { type: "RECORD", player: "joe", category: "threeOfAKind" }),
 					e => e === "CATEGORY_ALREADY_RECORDED"
 				)
 			})
@@ -178,17 +178,17 @@ describe("[Game] Recording", () => {
 	it("cannot score without having rolled", () => {
 		const s = init(["joe", "lisa"])
 		assert.throws(
-			() => reduce(s, { type: "RECORD", player: "joe", category: "threeOfAKind" }),
+			() => process(s, { type: "RECORD", player: "joe", category: "threeOfAKind" }),
 			e => e === "NO_DICES_ROLLED"
 		)
 	})
 
 	it("rejects invalid categories", () => {
 		flow(init(["joe", "lisa", "mike"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 4, 4, 4, 1] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 4, 4, 4, 1] }))
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "RECORD", player: "joe", category: "alshfygfjhashjf" }),
+					() => process(s, { type: "RECORD", player: "joe", category: "alshfygfjhashjf" }),
 					e => e === "BAD_ACTION"
 				)
 			})
@@ -198,37 +198,37 @@ describe("[Game] Recording", () => {
 describe("[Game] Game play", () => {
 	it("advances to next player after record and cleans up", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 3, 2, 1, 2] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "threes" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 3, 2, 1, 2] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "threes" }))
 			.peak(s => {
 				assert.strictEqual(s.onTurn, 1)
 				assert.deepStrictEqual(s.dices, [null, null, null, null, null])
 				assert.strictEqual(s.attempt, 0)
 			})
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [1, 1, 6, 1, 4] }))
-			.then(s => reduce(s, { type: "RECORD", player: "lisa", category: "aces" }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [1, 1, 6, 1, 4] }))
+			.then(s => process(s, { type: "RECORD", player: "lisa", category: "aces" }))
 			.peak(s => assert.strictEqual(s.onTurn, 0))
 	})
 
 	it("doesn’t allow actions of a player when they are not on turn", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "RECORD", player: "lisa", category: "chance" }),
+					() => process(s, { type: "RECORD", player: "lisa", category: "chance" }),
 					e => e === "NOT_ON_TURN"
 				)
 			})
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "ROLL", player: "qoiweufhajsduwhihas", dices: [1, 4, 1, 5, 6] }),
+					() => process(s, { type: "ROLL", player: "qoiweufhajsduwhihas", dices: [1, 4, 1, 5, 6] }),
 					e => e === "NOT_ON_TURN"
 				)
 			})
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "chance" }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "chance" }))
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }),
+					() => process(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }),
 					e => e === "NOT_ON_TURN"
 				)
 			})
@@ -242,14 +242,14 @@ describe("[Game] Game play", () => {
 					smallStraight: 30, largeStraight: 40, yahtzee: 50, chance: null }
 				return s
 			})
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 3, 2, 1, 2] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "chance" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 3, 2, 1, 2] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "chance" }))
 			.peak(s => {
 				assert.strictEqual(s.onTurn, null)
 			})
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "ROLL", player: "joe", dices: [1, 5, 6, 6, 1] }),
+					() => process(s, { type: "ROLL", player: "joe", dices: [1, 5, 6, 6, 1] }),
 					e => e === "NOT_ON_TURN"
 				)
 			})
@@ -257,14 +257,14 @@ describe("[Game] Game play", () => {
 
 	it("cannot attempt more than three times", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [5, null, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [5, 2, 3, 1] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [5, 5, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 5, 1] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [5, null, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [5, 2, 3, 1] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [5, 5, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 5, 1] }))
 			.peak(s => {
 				assert.throws(
-					() => reduce(s, { type: "SELECT", player: "joe", dices: [5, 5, 5, null, null] }),
+					() => process(s, { type: "SELECT", player: "joe", dices: [5, 5, 5, null, null] }),
 					e => e === "ROLLS_EXCEEDED"
 				)
 			})
@@ -274,32 +274,32 @@ describe("[Game] Game play", () => {
 describe("[Game] Integration test", () => {
 	it("works across a whole series of actions", () => {
 		flow(init(["joe", "lisa"]))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [5, null, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [5, 2, 3, 1] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [5, 5, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 5, 1] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "fives" }))
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [1, 2, 3, 4, 5] }))
-			.then(s => reduce(s, { type: "RECORD", player: "lisa", category: "largeStraight" }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [4, 4, 2, 3, 1] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [4, 4, null, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [1, 1, 2] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [1, 2, 4, null, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3, 4] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "smallStraight" }))
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [6, 5, 6, 2, 2] }))
-			.then(s => reduce(s, { type: "SELECT", player: "lisa", dices: [null, null, 6, 6, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [3, 6, 5] }))
-			.then(s => reduce(s, { type: "SELECT", player: "lisa", dices: [null, null, 6, 6, 6] }))
-			.then(s => reduce(s, { type: "ROLL", player: "lisa", dices: [3, 3] }))
-			.then(s => reduce(s, { type: "RECORD", player: "lisa", category: "fullHouse" }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2, 2, 2, 2, 5] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [2, 2, 2, 2, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [3] }))
-			.then(s => reduce(s, { type: "SELECT", player: "joe", dices: [2, 2, 2, 2, null] }))
-			.then(s => reduce(s, { type: "ROLL", player: "joe", dices: [2] }))
-			.then(s => reduce(s, { type: "RECORD", player: "joe", category: "yahtzee" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 4, 1, 5, 6] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [5, null, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [5, 2, 3, 1] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [5, 5, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 5, 1] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "fives" }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [1, 2, 3, 4, 5] }))
+			.then(s => process(s, { type: "RECORD", player: "lisa", category: "largeStraight" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [4, 4, 2, 3, 1] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [4, 4, null, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [1, 1, 2] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [1, 2, 4, null, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3, 4] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "smallStraight" }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [6, 5, 6, 2, 2] }))
+			.then(s => process(s, { type: "SELECT", player: "lisa", dices: [null, null, 6, 6, null] }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [3, 6, 5] }))
+			.then(s => process(s, { type: "SELECT", player: "lisa", dices: [null, null, 6, 6, 6] }))
+			.then(s => process(s, { type: "ROLL", player: "lisa", dices: [3, 3] }))
+			.then(s => process(s, { type: "RECORD", player: "lisa", category: "fullHouse" }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2, 2, 2, 2, 5] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [2, 2, 2, 2, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [3] }))
+			.then(s => process(s, { type: "SELECT", player: "joe", dices: [2, 2, 2, 2, null] }))
+			.then(s => process(s, { type: "ROLL", player: "joe", dices: [2] }))
+			.then(s => process(s, { type: "RECORD", player: "joe", category: "yahtzee" }))
 			// to be continued… 🤪
 			.peak(s => {
 				assert.deepStrictEqual(s.scorecards, [
