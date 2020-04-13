@@ -18,7 +18,7 @@ const isSubset = (ds, ss) => {
 	}, []).length === 0
 }
 
-const assert = ([msg, assertation]) => { if (assertation()) throw msg; }
+const assert = ([msg, assertation]) => { if (!assertation()) throw msg; }
 
 const sortBy = (things, numbers) => things
 	.map((t, i) => ({ t: t, x: numbers[i] }))

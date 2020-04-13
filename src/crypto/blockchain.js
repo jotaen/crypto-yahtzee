@@ -27,10 +27,10 @@ class Blockchain {
 
 	commitForeignBlock(state, block, transaction = noop) {
 		;[
-			["INCOMPATIBLE_BLOCK", () => block.precedingBlock !== this.latestHash()],
-			["MALFORMED_BLOCK", () => ! isValidFormat(block)],
-			["INVALID_SIGNATURE", () => ! verify(block, this._participants[block.author])],
-			["INCOMPATIBLE_STATE", () => hash(state) !== block.state],
+			["INCOMPATIBLE_BLOCK", () => block.precedingBlock === this.latestHash()],
+			["MALFORMED_BLOCK", () => isValidFormat(block)],
+			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
+			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
 		transaction() // commit won’t be reached if assertion throws
 		this._commit(block)

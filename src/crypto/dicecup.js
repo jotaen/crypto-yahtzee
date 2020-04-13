@@ -11,9 +11,9 @@ const check = (value, seed, hashStr) => {
 const submitHashes = (state, { player, seeds, hashes }) => {
 	const pid = state.players.indexOf(player)
 	;[
-		["NOT_PARTICIPANT", () => pid === -1],
-		["WRONG_ARITY", () => hashes.length !== state.arity || seeds.length !== state.arity],
-		["ALREADY_SUBMITTED", () => state.hashes[pid] !== null],
+		["NOT_PARTICIPANT", () => pid !== -1],
+		["WRONG_ARITY", () => hashes.length === state.arity && seeds.length === state.arity],
+		["ALREADY_SUBMITTED", () => state.hashes[pid] === null],
 	].forEach(assert)
 	const newState = deepClone(state)
 	newState.hashes[pid] = hashes
@@ -24,12 +24,12 @@ const submitHashes = (state, { player, seeds, hashes }) => {
 const submitValues = (state, { player, values }) => {
 	const pid = state.players.indexOf(player)
 	;[
-		["NOT_PARTICIPANT", () => pid === -1],
-		["WRONG_ARITY", () => values.length !== state.arity],
-		["HASHES_NOT_COMPLETE_YET", () => state.hashes.some(hs => hs === null)],
-		["ALREADY_SUBMITTED", () => state.values[pid] !== null],
+		["NOT_PARTICIPANT", () => pid !== -1],
+		["WRONG_ARITY", () => values.length === state.arity],
+		["HASHES_NOT_COMPLETE_YET", () => state.hashes.every(hs => hs !== null)],
+		["ALREADY_SUBMITTED", () => state.values[pid] === null],
 		["HASH_VALUE_MISMATCH", () => values.every((v, i) => {
-			return !check(v, state.seeds[pid][i], state.hashes[pid][i])
+			return check(v, state.seeds[pid][i], state.hashes[pid][i])
 		})],
 	].forEach(assert)
 	const newState = deepClone(state)

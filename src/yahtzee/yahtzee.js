@@ -6,9 +6,9 @@ const roll = (state, { player, dices }) => {
 	const rollers = state.dices.filter(d => d === null)
 	const remainers = state.dices.filter(d => d !== null)
 	;[
-		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
-		["NO_DICES_SELECTED", () => rollers.length === 0],
-		["INVALID_ROLL", () => dices.length !== rollers.length],
+		["NOT_ON_TURN", () => state.players.indexOf(player) === state.onTurn],
+		["NO_DICES_SELECTED", () => rollers.length !== 0],
+		["INVALID_ROLL", () => dices.length === rollers.length],
 	].forEach(assert)
 	const newDices = remainers.concat(dices).sort((a,b) => a-b)
 	return { ...state, attempt: state.attempt+1, dices: newDices }
@@ -17,10 +17,10 @@ const roll = (state, { player, dices }) => {
 const select = (state, { player, dices }) => {
 	const remainers = dices.filter(d => d !== null)
 	;[
-		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
-		["ROLLS_EXCEEDED", () => state.attempt >= 3],
-		["ALREADY_SELECTED", () => state.dices.some(d => d === null)],
-		["INCOMPATIBLE_SELECTION", () => !isSubset(state.dices, remainers)],
+		["NOT_ON_TURN", () => state.players.indexOf(player) === state.onTurn],
+		["ROLLS_EXCEEDED", () => state.attempt < 3],
+		["ALREADY_SELECTED", () => state.dices.every(d => d !== null)],
+		["INCOMPATIBLE_SELECTION", () => isSubset(state.dices, remainers)],
 	].forEach(assert)
 	return { ...state, dices: dices.slice() }
 }
@@ -28,9 +28,9 @@ const select = (state, { player, dices }) => {
 const record = (state, { player, category }) => {
 	const scorecard = state.scorecards[state.onTurn]
 	;[
-		["NOT_ON_TURN", () => state.players.indexOf(player) !== state.onTurn],
-		["NO_DICES_ROLLED", () => state.dices.some(d => d === null)],
-		["CATEGORY_ALREADY_RECORDED", () => scorecard[category] !== null],
+		["NOT_ON_TURN", () => state.players.indexOf(player) === state.onTurn],
+		["NO_DICES_ROLLED", () => state.dices.every(d => d !== null)],
+		["CATEGORY_ALREADY_RECORDED", () => scorecard[category] === null],
 	].forEach(assert)
 	const newState = deepClone(state)
 	const nextOnTurn = state.players.length-1 === state.onTurn ? 0 : state.onTurn + 1
