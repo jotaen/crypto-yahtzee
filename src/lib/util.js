@@ -25,6 +25,8 @@ const sortBy = (things, numbers) => things
 	.sort((a, b) => a.x-b.x)
 	.map(o => o.t)
 
+const noop = () => {}
+
 module.exports = {
-	isString, deepClone, deepFreeze, isSubset, assert, sortBy
+	isString, deepClone, deepFreeze, isSubset, assert, sortBy, noop
 }

@@ -28,18 +28,18 @@ describe("[DiceCup] Generation", () => {
 	it("uses sha256 hashes & seeds, and 32-bit hex values", () => {
 		const dc = new DiceCup(2, ["ALICE", "BOB"])
 		dc.dispatch({ type: "DICECUP_HASHES", player: "ALICE", seeds: [
-				"fbd0ed2087be3dafb52fd873c8a30a83cdd347c173c752b9fb31897f07ebc76d",
-				"deab94ad3fef33bfac696c5fa5a507044d8ae4138d07a96618caf990f5fba66c"
+				"ce57d8bc990447c7ec35557040756db2a9ff7cdab53911f3c7995bc6bf3572cda8c94fa53789e523a680de9921c067f6717e79426df467185fc7a6dbec4b2d57",
+				"18a39bace4ebdec63affbe4987b3f5b5e05a18fc960c37dee862a8eadbda0af7a43052c2b4c9318b529b28dd0f1a524226b7ab442056dcdf1188bba89ffd4fbd"
 			], hashes: [
-				"dde58fdd5818f862937a503cc411dfdd78e03b25575a4da3c4f53e0ef977dce7",
-				"0a38276618e2b1342905b88b5da578ab386a54b369e0665895b64202e4f89dee",
+				"c2d1d16431aa507c2fe15545b56de3b8745eb4f9c812c6d268d37cc57dc36b82422ccb6c753fccbcab6532f54645993c64df9fe44f0117f84077266ea4db589f",
+				"1619d14465b4e5f0ffc6793ab4a9898e349f10bd01069f0cb302fe52cdd06af6d7978a62d1fef9a89d4afb72343f36de89b65af7c229233a73a0fe6348dd118f",
 			] })
 		dc.dispatch({ type: "DICECUP_HASHES", player: "BOB", seeds: [
-				"5f53131e72425adfb6a007f61309deeb11ccfa06f0156703079c855e995bd71b",
-				"b736994617eb6d9a573342120f383686447dad1688fb25838dc674ca29b83687"
+				"f553217802b20f0668d4ee78a8761aa01ed4326ca45a69a9a4cec9759eb0c771c170a70220ecbda00dc5fe581894313933054eddc95a0ef339b0206fefa4273a",
+				"817f416f45a2fa35d4a2754a172938be74a361a4ba8cfb108fed05898a6f1cc3e3ac655abc95ecc7e7d5fd4238aa974f8f5f0e381d4e877b17f29c1a38c42ec7"
 			], hashes: [
-				"481b2ada2ae51c636a0080104af4fa70dabc0615e6cb96571ce428f3351f0f5d",
-				"6b5f20d35b4c6fbfec5b643775f220b0852c33ba2a887e6aaa4071c8c2a64308",
+				"ca238711db9649c75a1c942c9e48e0edb2ab72c1a1bdd362db12a8dd0200849e4bf36cbcb94ab4e08a9919766b24296a57efbccb040575bf05c026b977e08d8d",
+				"bb8b8d68b99425c660a2da6abd0789e025f858838707a7c2e2aaef2d26fa6cc424f56e65810e89625aaa79847d77770cc135a7d893ab987c3c22564e2ae7b9d7",
 			] })
 		dc.dispatch({ type: "DICECUP_VALUES", player: "ALICE", values: ["6b2df804", "02713fef"] })
 		assert.strictEqual(dc.isRolled(), false)

@@ -10,8 +10,8 @@ describe("[Blockchain] Creation", () => {
 		assert.deepStrictEqual(b.latestBlock(), {
 			precedingBlock: null,
 			participants: {
-				"4018f259129e14405d2c5100a02c203db9ba0d6a189aaf550515911900089888": ALICE.public,
-				"1384680ecaf920b947d33e6710fd33ff1d2b6119e62393de506337e0ca09458d": BOB.public
+				"a548f70d3a0d3b97b07afce03dcaa7863741bad5e8e2d44ec9419b55a6bce97d0142e25e22184a843f9ba6355ae4423dc952991ce9eb545161e194842a13367a": ALICE.public,
+				"d7a6a8332de4bd112cea966061d76ff0f72b9403f062a2dbce78293bb54768422294e9833a302993516f1aed87ad0ff0c82e705e7fbf1a550d23b43d78db5ad0": BOB.public
 			},
 			protocolVersion: 0,
 		})

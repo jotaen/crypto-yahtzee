@@ -102,7 +102,7 @@ const random32bitHexString = () => Math.random()
 
 const random = () => {
 	const value = random32bitHexString()
-	const seed = Array.from(Array(64/VALUE_STRING_LENGTH))
+	const seed = Array.from(Array(hash("").length/VALUE_STRING_LENGTH))
 		.map(() => random32bitHexString())
 		.join("")
 	return {

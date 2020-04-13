@@ -14,13 +14,13 @@ const hash = data => {
 	}
 	const isComplex = ["object", "array"].includes(typeof data)
 	const message = isComplex ? safeStringify(data) : String(data)
-	return createHash("sha256").update(message).digest("hex")
+	return createHash("sha512").update(message).digest("hex")
 }
 
 const isHexString = length =>
 	x => typeof x === "string" && x.length === length && /^[a-f0-9]*$/.test(x)
 
-const isHash = isHexString(64)
+const isHash = isHexString(128)
 
 module.exports = {
 	hash, isHexString, isHash

@@ -5,18 +5,18 @@ describe("[Hash] Hash", () => {
 	it("hashes primitives", () => {
 		assert.strictEqual(
 			hash("hello"),
-			"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+			"9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043"
 		)
 		assert.strictEqual(
 			hash(5627),
-			"1ba3c39b667caa93fe3cfb6db5243f90ad7defe445a936570912279e9fea762f"
+			"f0c20b9fb7e5169336b5574407ec1141759ca4d472dfe64adce6b2a13bc1540691469559681dbd86df8048c962028245d27afec46ae14ae73fa82028418388c2"
 		)
 	})
 
 	it("hashes object (regardless of their property order)", () => {
 		assert.strictEqual(
 			hash({foo: 1, bar: 2}),
-			"48c194fb31dbcbf03db282ef4bd9d0a05bb043f048174805438d4a11d4bd0e42"
+			"428e98b16d7971d55581738f7320d4cf3bc43ceef5ca7184ed0643737462378c9f21b481e44902efd08b61fddd00d11d11084b5eb5a7e26b6fe0a8366ba2c481"
 		)
 		assert.strictEqual(hash({foo: 1, bar: 2}), hash({bar: 2, foo: 1}))
 	})
