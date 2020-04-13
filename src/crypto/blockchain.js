@@ -1,6 +1,6 @@
 const { hash, isHash } = require("./hash")
 const { sign, verify } = require("./rsa")
-const { assert, deepFreeze } = require("../lib/util")
+const { assert, deepFreeze, noop } = require("../lib/util")
 
 const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
 const isValidFormat = block =>
@@ -23,30 +23,20 @@ class Blockchain {
 			protocolVersion: 0,
 			participants: this._participants,
 		})]
-		this._stagedBlock = null
 	}
 
-	commit(block) {
-		;[
-			["NO_BLOCK_STAGED", () => this._stagedBlock === null],
-		].forEach(assert)
-
-		this._blockchain.push(this._stagedBlock)
-		this._stagedBlock = null
-	}
-
-	stageForeignBlock(state, block) {
+	commitForeignBlock(state, block, transaction = noop) {
 		;[
 			["INCOMPATIBLE_BLOCK", () => block.precedingBlock !== this.latestHash()],
 			["MALFORMED_BLOCK", () => ! isValidFormat(block)],
 			["INVALID_SIGNATURE", () => ! verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) !== block.state],
 		].forEach(assert)
-
-		this._stagedBlock = block
+		transaction() // commit won’t be reached if assertion throws
+		this._commit(block)
 	}
 
-	stageOwnBlock(state, payload) {
+	commitOwnBlock(state, payload) {
 		const block = {
 			precedingBlock: this.latestHash(),
 			state: hash(state),
@@ -55,7 +45,7 @@ class Blockchain {
 			signature: null,
 		}
 		block.signature = sign(block, this._privateKey)
-		this._stagedBlock = deepFreeze(block)
+		this._commit(block)
 	}
 
 	latestHash() {
@@ -72,6 +62,10 @@ class Blockchain {
 
 	owner() {
 		return this._publicKey
+	}
+
+	_commit(block) {
+		this._blockchain.push(deepFreeze(block))
 	}
 }
 

@@ -25,9 +25,9 @@ class Game {
 		if (hash(block.payload.player) !== block.author) {
 			return
 		}
-		this._blockchain.stageForeignBlock(this._yahtzee, block)
-		this._storePointer.next().value.dispatch(block.payload)
-		this._blockchain.commit()
+		this._blockchain.commitForeignBlock(this._yahtzee, block, () => {
+			this._storePointer.next().value.dispatch(block.payload)
+		})
 	}
 
 	select(dices) {
@@ -56,8 +56,7 @@ class Game {
 
 	_dispatchOwnAction(action) {
 		this._storePointer.next().value.dispatch(action)
-		this._blockchain.stageOwnBlock(this._yahtzee, action)
-		this._blockchain.commit()
+		this._blockchain.commitOwnBlock(this._yahtzee, action)
 		this._callbacks.onPopulateBlock(this._blockchain.latestBlock())
 	}
 }

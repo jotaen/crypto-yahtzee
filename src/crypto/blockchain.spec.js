@@ -35,19 +35,10 @@ describe("[Blockchain] Block creation", () => {
 	it("creates and signs own block correctly", () => {
 		const b = new Blockchain(ALICE, [BOB.public])
 		const payload = { action: "FOO" }
-		b.stageOwnBlock({ state: "BAR" }, payload)
-		b.commit()
+		b.commitOwnBlock({ state: "BAR" }, payload)
 		assert.deepStrictEqual(b.latestBlock().payload, payload)
 		assert.strictEqual(rsa.verify(b.latestBlock(), ALICE.public), true)
 		assert.strictEqual(rsa.verify(b.latestBlock(), BOB.public), false)
-	})
-
-	it("cannot commit when nothing was staged", () => {
-		const b = new Blockchain(ALICE, [BOB.public])
-		assert.throws(
-			() => b.commit(),
-			e => e === "NO_BLOCK_STAGED"
-		)
 	})
 })
 
@@ -56,24 +47,40 @@ describe("[Blockchain] Foreign blocks", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
-		aliceBlockchain.stageOwnBlock({ someState: 3126 }, { foo: 2 })
-		aliceBlockchain.commit()
-
-		bobBlockchain.stageForeignBlock({ someState: 3126 }, aliceBlockchain.latestBlock())
-		bobBlockchain.commit()
+		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
+		bobBlockchain.commitForeignBlock({ someState: 3126 }, aliceBlockchain.latestBlock())
 
 		assert.deepStrictEqual(aliceBlockchain.latestBlock(), bobBlockchain.latestBlock())
+	})
+
+	it("rejects foreign blocks if assertion fails", () => {
+		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
+		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+
+		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
+
+		const bobLastGoodHash = bobBlockchain.latestHash()
+		assert.throws(
+			() => {
+				bobBlockchain.commitForeignBlock(
+					{ someState: 3126 },
+					aliceBlockchain.latestBlock(),
+					() => { throw "some-custom-assertion" }
+				)
+			},
+			e => e === "some-custom-assertion"
+		)
+		assert.strictEqual(bobBlockchain.latestHash(), bobLastGoodHash)
 	})
 
 	it("rejects foreign blocks from alien blockchain", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [])
 
-		aliceBlockchain.stageOwnBlock({}, { foo: 2 })
-		aliceBlockchain.commit()
+		aliceBlockchain.commitOwnBlock({}, { foo: 2 })
 
 		assert.throws(
-			() => bobBlockchain.stageForeignBlock({}, aliceBlockchain.latestBlock()),
+			() => bobBlockchain.commitForeignBlock({}, aliceBlockchain.latestBlock()),
 			e => e === "INCOMPATIBLE_BLOCK"
 		)
 	})
@@ -83,11 +90,8 @@ describe("[Blockchain] Foreign blocks", () => {
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 		const chrisBlockchain = new Blockchain(CHRIS, [BOB.public])
 
-		bobBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
-		bobBlockchain.commit()
-
-		chrisBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
-		chrisBlockchain.commit()
+		bobBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
+		chrisBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 
 		const corruptedBlock = {
 			...bobBlockchain.latestBlock(),
@@ -95,7 +99,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		}
 
 		assert.throws(
-			() => aliceBlockchain.stageForeignBlock({}, corruptedBlock),
+			() => aliceBlockchain.commitForeignBlock({}, corruptedBlock),
 			e => e === "INVALID_SIGNATURE"
 		)
 	})
@@ -104,8 +108,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
-		bobBlockchain.stageOwnBlock({ state: "BAR" }, { action: "FOO" })
-		bobBlockchain.commit()
+		bobBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 
 		const corruptedBlock = {
 			...bobBlockchain.latestBlock(),
@@ -114,7 +117,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		}
 
 		assert.throws(
-			() => aliceBlockchain.stageForeignBlock({}, corruptedBlock),
+			() => aliceBlockchain.commitForeignBlock({}, corruptedBlock),
 			e => e === "MALFORMED_BLOCK"
 		)
 	})
@@ -123,11 +126,10 @@ describe("[Blockchain] Foreign blocks", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
-		bobBlockchain.stageOwnBlock({ someState: 2 }, { action: "FOO" })
-		bobBlockchain.commit()
+		bobBlockchain.commitOwnBlock({ someState: 2 }, { action: "FOO" })
 
 		assert.throws(
-			() => aliceBlockchain.stageForeignBlock({ someState: 1928 }, bobBlockchain.latestBlock()),
+			() => aliceBlockchain.commitForeignBlock({ someState: 1928 }, bobBlockchain.latestBlock()),
 			e => e === "INCOMPATIBLE_STATE"
 		)
 
