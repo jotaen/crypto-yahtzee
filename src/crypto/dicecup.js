@@ -4,15 +4,20 @@ const { isString, assert, deepClone } = require("../lib/util")
 
 const VALUE_STRING_LENGTH = 8 // 32 bit hex value
 
-const submitHashes = (state, { player, hashes }) => {
+const check = (value, seed, hashStr) => {
+	return hash(seed + value) === hashStr
+}
+
+const submitHashes = (state, { player, seeds, hashes }) => {
 	const pid = state.players.indexOf(player)
 	;[
 		["NOT_PARTICIPANT", () => pid === -1],
-		["WRONG_ARITY", () => hashes.length !== state.arity],
+		["WRONG_ARITY", () => hashes.length !== state.arity || seeds.length !== state.arity],
 		["ALREADY_SUBMITTED", () => state.hashes[pid] !== null],
 	].forEach(assert)
 	const newState = deepClone(state)
 	newState.hashes[pid] = hashes
+	newState.seeds[pid] = seeds
 	return newState
 }
 
@@ -23,7 +28,9 @@ const submitValues = (state, { player, values }) => {
 		["WRONG_ARITY", () => values.length !== state.arity],
 		["HASHES_NOT_COMPLETE_YET", () => state.hashes.some(hs => hs === null)],
 		["ALREADY_SUBMITTED", () => state.values[pid] !== null],
-		["HASH_VALUE_MISMATCH", () => values.every((v, i) => state.hashes[pid][i] !== hash(v))],
+		["HASH_VALUE_MISMATCH", () => values.every((v, i) => {
+			return !check(v, state.seeds[pid][i], state.hashes[pid][i])
+		})],
 	].forEach(assert)
 	const newState = deepClone(state)
 	newState.values[pid] = values
@@ -31,17 +38,21 @@ const submitValues = (state, { player, values }) => {
 }
 
 const routes = {
-	"SEED_HASHES": {
+	"DICECUP_HASHES": {
 		fn: submitHashes,
 		shape: {
 			player: [isString],
+			seeds: [
+				ss => Array.isArray(ss),
+				ss => ss.every(isHash),
+			],
 			hashes: [
 				hs => Array.isArray(hs),
 				hs => hs.every(isHash),
 			],
 		},
 	},
-	"SEED_VALUES": {
+	"DICECUP_VALUES": {
 		fn: submitValues,
 		shape: {
 			player: [isString],
@@ -59,6 +70,7 @@ class DiceCup extends Store {
 			players: players,
 			arity: arity,
 			hashes: players.map(() => null),
+			seeds: players.map(() => null),
 			values: players.map(() => null),
 		})
 	}
@@ -82,15 +94,20 @@ class DiceCup extends Store {
 	}
 }
 
-// Generates 32-bit random numbers with corresponding hash
+const random32bitHexString = () => Math.random()
+	.toString(16)
+	.substr("0.".length) // float prefix
+	.padEnd(VALUE_STRING_LENGTH, "0")
+	.substr(0, VALUE_STRING_LENGTH)
+
 const random = () => {
-	const value = Math.random()
-		.toString(16)
-		.substr("0.".length) // float prefix
-		.padEnd(VALUE_STRING_LENGTH, "0")
-		.substr(0, VALUE_STRING_LENGTH)
+	const value = random32bitHexString()
+	const seed = Array.from(Array(64/VALUE_STRING_LENGTH))
+		.map(() => random32bitHexString())
+		.join("")
 	return {
-		hash: hash(value),
+		hash: hash(seed + value),
+		seed: seed,
 		value: value,
 	}
 }

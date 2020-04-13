@@ -4,7 +4,7 @@
 
 
 ## Crypto
-- Seed all hashes with guid (guid created through everyone)
+
 
 # App
 - Determine turn order via initial rolling
