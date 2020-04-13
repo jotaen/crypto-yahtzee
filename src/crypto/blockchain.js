@@ -1,11 +1,6 @@
 const { hash, isHash } = require("./hash")
 const { sign, verify } = require("./rsa")
-const { assert } = require("../lib/util")
-
-const freeze = block => Object.freeze({
-	...block,
-	payload: Object.freeze(block.payload)
-})
+const { assert, deepFreeze } = require("../lib/util")
 
 const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
 const isValidFormat = block =>
@@ -15,11 +10,19 @@ const isValidFormat = block =>
 	&& isHash(block.author)
 
 class Blockchain {
-	constructor(keyPair, rootBlock) {
-		this._publicKey = keyPair.public
-		this._privateKey = keyPair.private
-		this._blockchain = [Object.freeze(rootBlock)]
-		this._participants = rootBlock.participants
+	constructor(ownerKeyPair, otherParticipantsPublicKeys) {
+		this._participants = [ownerKeyPair.public, ...otherParticipantsPublicKeys]
+			.reduce((a, c) => {
+				a[hash(c)] = c
+				return a
+			}, {})
+		this._publicKey = ownerKeyPair.public
+		this._privateKey = ownerKeyPair.private
+		this._blockchain = [deepFreeze({
+			precedingBlock: null,
+			protocolVersion: 0,
+			participants: this._participants,
+		})]
 		this._stagedBlock = null
 	}
 
@@ -52,7 +55,7 @@ class Blockchain {
 			signature: null,
 		}
 		block.signature = sign(block, this._privateKey)
-		this._stagedBlock = freeze(block)
+		this._stagedBlock = deepFreeze(block)
 	}
 
 	latestHash() {
@@ -63,28 +66,15 @@ class Blockchain {
 		return this._blockchain[this._blockchain.length-1]
 	}
 
-	stagedBlock() {
-		return this._stagedBlock
+	participants() {
+		return Object.values(this._participants).sort()
+	}
+
+	owner() {
+		return this._publicKey
 	}
 }
 
-const createNew = (guid, keyPair, otherPublicKeys) => {
-	const participants = [keyPair.public, ...otherPublicKeys].reduce((a, c) => {
-		a[hash(c)] = c
-		return a
-	}, {})
-	return new Blockchain(keyPair, {
-		precedingBlock: null,
-		guid: hash(guid),
-		protocolVersion: 0,
-		participants: participants,
-	})
-}
-
-const createWithRoot = (keyPair, rootBlock) => {
-	return new Blockchain(keyPair, rootBlock)
-}
-
 module.exports = {
-	createNew, createWithRoot
+	Blockchain
 }

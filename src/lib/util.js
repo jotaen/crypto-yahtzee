@@ -1,5 +1,11 @@
 const deepClone = obj => JSON.parse(JSON.stringify(obj))
 
+const deepFreeze = obj => Object.freeze(Object.entries(obj)
+	.reduce((a, [key, val]) => {
+		a[key] = (val !== null && typeof val === "object") ? deepFreeze(val) : val
+		return a
+	}, {}))
+
 const isString = x => typeof x === "string"
 
 const isSubset = (ds, ss) => {
@@ -20,5 +26,5 @@ const sortBy = (things, numbers) => things
 	.map(o => o.t)
 
 module.exports = {
-	isString, deepClone, isSubset, assert, sortBy
+	isString, deepClone, deepFreeze, isSubset, assert, sortBy
 }
