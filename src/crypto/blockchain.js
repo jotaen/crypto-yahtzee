@@ -27,7 +27,7 @@ class Blockchain {
 
 	commitForeignBlock(state, block, transaction = noop) {
 		;[
-			["INCOMPATIBLE_BLOCK", () => block.precedingBlock === this.latestHash()],
+			["INCOMPATIBLE_BLOCK", () => block.precedingBlock === hash(this.head())],
 			["MALFORMED_BLOCK", () => isValidFormat(block)],
 			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
@@ -38,7 +38,7 @@ class Blockchain {
 
 	commitOwnBlock(state, payload) {
 		const block = {
-			precedingBlock: this.latestHash(),
+			precedingBlock: hash(this.head()),
 			state: hash(state),
 			author: hash(this._publicKey),
 			payload: payload,
@@ -48,11 +48,7 @@ class Blockchain {
 		this._commit(block)
 	}
 
-	latestHash() {
-		return hash(this.latestBlock())
-	}
-
-	latestBlock() {
+	head() {
 		return this._blockchain[this._blockchain.length-1]
 	}
 

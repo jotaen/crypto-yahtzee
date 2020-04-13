@@ -7,7 +7,7 @@ const { ALICE, BOB, CHRIS } = require("./rsa-testdata.json")
 describe("[Blockchain] Creation", () => {
 	it("stores basic info in initial block", () => {
 		const b = new Blockchain(ALICE, [BOB.public])
-		assert.deepStrictEqual(b.latestBlock(), {
+		assert.deepStrictEqual(b.head(), {
 			precedingBlock: null,
 			participants: {
 				"a548f70d3a0d3b97b07afce03dcaa7863741bad5e8e2d44ec9419b55a6bce97d0142e25e22184a843f9ba6355ae4423dc952991ce9eb545161e194842a13367a": ALICE.public,
@@ -21,7 +21,7 @@ describe("[Blockchain] Creation", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
-		assert.deepStrictEqual(aliceBlockchain.latestBlock(), bobBlockchain.latestBlock())
+		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
 		
 		assert.strictEqual(aliceBlockchain.owner(), ALICE.public)
 		assert.strictEqual(bobBlockchain.owner(), BOB.public)
@@ -36,9 +36,9 @@ describe("[Blockchain] Block creation", () => {
 		const b = new Blockchain(ALICE, [BOB.public])
 		const payload = { action: "FOO" }
 		b.commitOwnBlock({ state: "BAR" }, payload)
-		assert.deepStrictEqual(b.latestBlock().payload, payload)
-		assert.strictEqual(rsa.verify(b.latestBlock(), ALICE.public), true)
-		assert.strictEqual(rsa.verify(b.latestBlock(), BOB.public), false)
+		assert.deepStrictEqual(b.head().payload, payload)
+		assert.strictEqual(rsa.verify(b.head(), ALICE.public), true)
+		assert.strictEqual(rsa.verify(b.head(), BOB.public), false)
 	})
 })
 
@@ -48,9 +48,9 @@ describe("[Blockchain] Foreign blocks", () => {
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
 		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
-		bobBlockchain.commitForeignBlock({ someState: 3126 }, aliceBlockchain.latestBlock())
+		bobBlockchain.commitForeignBlock({ someState: 3126 }, aliceBlockchain.head())
 
-		assert.deepStrictEqual(aliceBlockchain.latestBlock(), bobBlockchain.latestBlock())
+		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
 	})
 
 	it("rejects foreign blocks if assertion fails", () => {
@@ -59,18 +59,18 @@ describe("[Blockchain] Foreign blocks", () => {
 
 		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
 
-		const bobLastGoodHash = bobBlockchain.latestHash()
+		const bobLastGoodBlock = bobBlockchain.head()
 		assert.throws(
 			() => {
 				bobBlockchain.commitForeignBlock(
 					{ someState: 3126 },
-					aliceBlockchain.latestBlock(),
+					aliceBlockchain.head(),
 					() => { throw "some-custom-assertion" }
 				)
 			},
 			e => e === "some-custom-assertion"
 		)
-		assert.strictEqual(bobBlockchain.latestHash(), bobLastGoodHash)
+		assert.strictEqual(bobBlockchain.head(), bobLastGoodBlock)
 	})
 
 	it("rejects foreign blocks from alien blockchain", () => {
@@ -80,7 +80,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		aliceBlockchain.commitOwnBlock({}, { foo: 2 })
 
 		assert.throws(
-			() => bobBlockchain.commitForeignBlock({}, aliceBlockchain.latestBlock()),
+			() => bobBlockchain.commitForeignBlock({}, aliceBlockchain.head()),
 			e => e === "INCOMPATIBLE_BLOCK"
 		)
 	})
@@ -94,8 +94,8 @@ describe("[Blockchain] Foreign blocks", () => {
 		chrisBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 
 		const corruptedBlock = {
-			...bobBlockchain.latestBlock(),
-			signature: chrisBlockchain.latestBlock().signature
+			...bobBlockchain.head(),
+			signature: chrisBlockchain.head().signature
 		}
 
 		assert.throws(
@@ -111,7 +111,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		bobBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 
 		const corruptedBlock = {
-			...bobBlockchain.latestBlock(),
+			...bobBlockchain.head(),
 			foo: 1,
 			bar: "hello",
 		}
@@ -129,7 +129,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		bobBlockchain.commitOwnBlock({ someState: 2 }, { action: "FOO" })
 
 		assert.throws(
-			() => aliceBlockchain.commitForeignBlock({ someState: 1928 }, bobBlockchain.latestBlock()),
+			() => aliceBlockchain.commitForeignBlock({ someState: 1928 }, bobBlockchain.head()),
 			e => e === "INCOMPATIBLE_STATE"
 		)
 

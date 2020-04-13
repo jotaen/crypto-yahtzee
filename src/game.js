@@ -41,7 +41,7 @@ class Game {
 	_update() {
 		const currentStore = this._storePointer.next().value
 		if (currentStore instanceof Yahtzee) {
-			this._yahtzee == s
+			this._yahtzee == currentStore.getState()
 		}
 		if (currentStore instanceof DiceCup) {
 			this._dices = this._callbacks.onRoll(currentStore.getState().arity)
@@ -57,7 +57,7 @@ class Game {
 	_dispatchOwnAction(action) {
 		this._storePointer.next().value.dispatch(action)
 		this._blockchain.commitOwnBlock(this._yahtzee, action)
-		this._callbacks.onPopulateBlock(this._blockchain.latestBlock())
+		this._callbacks.onPopulateBlock(this._blockchain.head())
 	}
 }
 
