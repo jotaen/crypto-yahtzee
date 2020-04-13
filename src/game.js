@@ -22,10 +22,10 @@ class Game {
 	}
 
 	receiveBlock(block) {
-		if (hash(block.payload.player) !== block.author) {
-			return
-		}
-		this._blockchain.commitForeignBlock(this._yahtzee, block, () => {
+		this._blockchain.commitForeignBlock(this._yahtzee, block, (payload, author) => {
+			if (author !== payload.player) {
+				throw "AUTHORISATION_FAILURE"
+			}
 			this._storePointer.next().value.dispatch(block.payload)
 		})
 	}
@@ -57,7 +57,7 @@ class Game {
 	_dispatchOwnAction(action) {
 		this._storePointer.next().value.dispatch(action)
 		this._blockchain.commitOwnBlock(this._yahtzee, action)
-		this._callbacks.onPopulateBlock(this._blockchain.head())
+		this._callbacks.onPopulateBlock(this._blockchain.head()[0])
 	}
 }
 

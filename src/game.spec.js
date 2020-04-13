@@ -1,7 +1,7 @@
 const { Game } = require("./game")
 const { random } = require("./crypto/dicecup")
 
-const { ALICE, BOB, CHRIS } = require("./crypto/rsa-testdata.json")
+const { ALICE, BOB } = require("./crypto/rsa-testdata.json")
 
 const hashes = rs => rs.map(r => r.value.hash)
 const values = rs => rs.map(r => r.value.value)
@@ -11,15 +11,14 @@ const defaultCallbacks = buffer => ({
 	onPopulateBlock: block => buffer.push(block),
 })
 
-describe("[Game] Entire game flow", () => {
+describe("[Game] Flow", () => {
 	it("1. Initialisation (determine turn order through rolling)", () => {
 		const buffer = []
-		const game = {
-			alice: new Game(ALICE, [BOB.public], defaultCallbacks(buffer)),
-			bob: new Game(BOB, [ALICE.public], defaultCallbacks(buffer)),
-		}
 
-		// game.alice.receiveBlock(buffer.pop())
-		// game.bob.receiveBlock(buffer.pop())
+		const alice = new Game(ALICE, [BOB.public], defaultCallbacks(buffer))
+		const bob = new Game(BOB, [ALICE.public], defaultCallbacks(buffer))
+
+		alice.receiveBlock(buffer.pop())
+		bob.receiveBlock(buffer.pop())
 	})
 })

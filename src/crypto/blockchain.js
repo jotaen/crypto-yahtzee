@@ -1,6 +1,6 @@
 const { hash, isHash } = require("./hash")
 const { sign, verify } = require("./rsa")
-const { assert, deepFreeze, noop } = require("../lib/util")
+const { assert, noop } = require("../lib/util")
 
 const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
 const isValidFormat = block =>
@@ -18,7 +18,7 @@ class Blockchain {
 			}, {})
 		this._publicKey = ownerKeyPair.public
 		this._privateKey = ownerKeyPair.private
-		this._blockchain = [[deepFreeze({
+		this._blockchain = [[Object.freeze({
 			precedingBlock: null,
 			protocolVersion: 0,
 			participants: this._participants,
@@ -32,7 +32,7 @@ class Blockchain {
 			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
-		transaction() // commit won’t be reached if transaction throws
+		transaction(block.payload, this._participants[block.author]) // commit won’t be reached if transaction throws
 		this._commit(block)
 	}
 
@@ -68,7 +68,7 @@ class Blockchain {
 		if (block.precedingBlock === hash(this.head())) {
 			this._blockchain.push([])
 		}
-		this.head().push(deepFreeze(block))
+		this.head().push(Object.freeze(block))
 		this.head().sort((a,b) => a.author < b.author ? -1 : 1)
 	}
 }

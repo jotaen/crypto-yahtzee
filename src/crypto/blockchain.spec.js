@@ -55,9 +55,17 @@ describe("[Blockchain] Foreign blocks", () => {
 	it("accepts foreign blocks as new head", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const payload = { foo: 2 }
 
-		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
-		bobBlockchain.commitForeignBlock({ someState: 3126 }, aliceBlockchain.head()[0])
+		aliceBlockchain.commitOwnBlock({ someState: 3126 }, payload)
+		bobBlockchain.commitForeignBlock(
+			{ someState: 3126 },
+			aliceBlockchain.head()[0],
+			(payload, author) => {
+				assert.deepStrictEqual(payload, payload)
+				assert.strictEqual(author, ALICE.public)
+			}
+		)
 
 		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
 		assert.deepStrictEqual(aliceBlockchain.head().length, 1)
@@ -80,7 +88,7 @@ describe("[Blockchain] Foreign blocks", () => {
 		assert.deepStrictEqual(aliceBlockchain.head().length, 2)
 	})
 
-	it("rejects foreign blocks if assertion fails", () => {
+	it("rejects foreign blocks if transaction fails", () => {
 		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
