@@ -18,21 +18,21 @@ class Blockchain {
 			}, {})
 		this._publicKey = ownerKeyPair.public
 		this._privateKey = ownerKeyPair.private
-		this._blockchain = [deepFreeze({
+		this._blockchain = [[deepFreeze({
 			precedingBlock: null,
 			protocolVersion: 0,
 			participants: this._participants,
-		})]
+		})]]
 	}
 
 	commitForeignBlock(state, block, transaction = noop) {
 		;[
-			["INCOMPATIBLE_BLOCK", () => block.precedingBlock === hash(this.head())],
+			["INCOMPATIBLE_BLOCK", () => [hash(this.head()), hash(this._ancestor())].includes(block.precedingBlock)],
 			["MALFORMED_BLOCK", () => isValidFormat(block)],
 			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
-		transaction() // commit won’t be reached if assertion throws
+		transaction() // commit won’t be reached if transaction throws
 		this._commit(block)
 	}
 
@@ -60,8 +60,16 @@ class Blockchain {
 		return this._publicKey
 	}
 
+	_ancestor() {
+		return this._blockchain[this._blockchain.length-2]
+	}
+
 	_commit(block) {
-		this._blockchain.push(deepFreeze(block))
+		if (block.precedingBlock === hash(this.head())) {
+			this._blockchain.push([])
+		}
+		this.head().push(deepFreeze(block))
+		this.head().sort((a,b) => a.author < b.author ? -1 : 1)
 	}
 }
 
