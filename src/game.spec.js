@@ -1,3 +1,4 @@
+const assert = require("assert")
 const { Game } = require("./game")
 const { random } = require("./crypto/dicecup")
 
@@ -18,7 +19,12 @@ describe("[Game] Flow", () => {
 		const alice = new Game(ALICE, [BOB.public], defaultCallbacks(buffer))
 		const bob = new Game(BOB, [ALICE.public], defaultCallbacks(buffer))
 
-		alice.receiveBlock(buffer.pop())
-		bob.receiveBlock(buffer.pop())
+		assert.strictEqual(buffer.length, 2)
+		bob.receiveBlock(buffer.shift())
+		alice.receiveBlock(buffer.shift())
+
+		assert.strictEqual(buffer.length, 2)
+		alice.receiveBlock(buffer.shift())
+		bob.receiveBlock(buffer.shift())
 	})
 })

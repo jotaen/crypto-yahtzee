@@ -92,6 +92,16 @@ class DiceCup extends Store {
 					.reduce((a, c) => a ^ c, 0)
 			)
 	}
+
+	canSubmitHashes(player) {
+		const pid = this.getState().players.indexOf(player)
+		return this.getState().hashes[pid] === null
+	}
+
+	canSubmitValues(player) {
+		const pid = this.getState().players.indexOf(player)
+		return this.getState().values[pid] === null && this.getState().hashes[pid] !== null
+	}
 }
 
 const random32bitHexString = () => Math.random()

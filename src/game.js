@@ -10,7 +10,7 @@ class Game {
 		this._owner = this._blockchain.owner()
 		this._storePointer = StoreMachine(this._blockchain.participants())
 		this._yahtzee = null
-		this._dices = null
+		this._diceCup = { cup: null, dices: null }
 		this._callbacks = {
 			onRoll: noop,
 			onSelect: noop,
@@ -28,6 +28,7 @@ class Game {
 			}
 			this._storePointer.next().value.dispatch(block.payload)
 		})
+		this._update()
 	}
 
 	select(dices) {
@@ -40,16 +41,30 @@ class Game {
 
 	_update() {
 		const currentStore = this._storePointer.next().value
-		if (currentStore instanceof Yahtzee) {
-			this._yahtzee == currentStore.getState()
-		}
 		if (currentStore instanceof DiceCup) {
-			this._dices = this._callbacks.onRoll(currentStore.getState().arity)
+			this._updateDices(currentStore)
+		}
+	}
+
+	_updateDices(diceCup) {
+		if (this._diceCup.cup !== diceCup) {
+			this._diceCup = {
+				cup: diceCup,
+				dices: this._callbacks.onRoll(diceCup.getState().arity),
+			}
+		}
+		if (diceCup.canSubmitHashes(this._owner)) {
 			this._dispatchOwnAction({
 				type: "DICECUP_HASHES",
 				player: this._owner,
-				seeds: this._dices.map(d => d.seed),
-				hashes: this._dices.map(d => d.hash),
+				seeds: this._diceCup.dices.map(d => d.seed),
+				hashes: this._diceCup.dices.map(d => d.hash),
+			})
+		} else if (diceCup.canSubmitValues(this._owner)) {
+			this._dispatchOwnAction({
+				type: "DICECUP_VALUES",
+				player: this._owner,
+				values: this._diceCup.dices.map(d => d.value),
 			})
 		}
 	}
