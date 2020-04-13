@@ -11,7 +11,7 @@ class Game {
 		this._storeMachine.next().value.dispatch(action)
 
 		// invoke generator again to advance/flush internal state
-		return this._storeMachine.next()
+		return this._storeMachine.next().value
 	}
 }
 
