@@ -9,6 +9,7 @@ class Game {
 		this._blockchain = new Blockchain(privateKey, otherPlayersPublicKeys)
 		this._storePointer = StoreMachine(this._blockchain.participants())
 		this._yahtzee = null
+		this._diceCup = null
 		this._dices = null
 		this._callbacks = {
 			onRoll: noop,
@@ -41,12 +42,13 @@ class Game {
 	_update() {
 		const currentStore = this._storePointer.next().value
 		if (currentStore instanceof DiceCup) {
-			this._updateDices(currentStore)
+			this._handleDicing(currentStore)
 		}
 	}
 
-	_updateDices(diceCup) {
-		if (this._dices === null) {
+	_handleDicing(diceCup) {
+		if (this._diceCup !== diceCup) {
+			this._diceCup = diceCup
 			this._dices = this._callbacks.onRoll(diceCup.getState().arity)
 		}
 		if (diceCup.canSubmitHashes(this._blockchain.owner().public)) {
@@ -63,7 +65,6 @@ class Game {
 				player: this._blockchain.owner().public,
 				values: this._dices.map(d => d.value),
 			})
-			this._dices = null
 		}
 	}
 
