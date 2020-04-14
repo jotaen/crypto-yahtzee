@@ -10,7 +10,7 @@ class Game {
 		this._owner = this._blockchain.owner()
 		this._storePointer = StoreMachine(this._blockchain.participants())
 		this._yahtzee = null
-		this._diceCup = { cup: null, dices: null }
+		this._dices = null
 		this._callbacks = {
 			onRoll: noop,
 			onSelect: noop,
@@ -23,9 +23,9 @@ class Game {
 
 	receiveBlock(block) {
 		this._blockchain.commitForeignBlock(this._yahtzee, block, (payload, author) => {
-			if (author !== payload.player) {
-				throw "AUTHORISATION_FAILURE"
-			}
+			// if (author !== payload.player) {
+			// 	throw "AUTHORISATION_FAILURE"
+			// }
 			this._storePointer.next().value.dispatch(block.payload)
 		})
 		this._update()
@@ -47,25 +47,24 @@ class Game {
 	}
 
 	_updateDices(diceCup) {
-		if (this._diceCup.cup !== diceCup) {
-			this._diceCup = {
-				cup: diceCup,
-				dices: this._callbacks.onRoll(diceCup.getState().arity),
-			}
+		if (this._dices === null) {
+			this._dices = this._callbacks.onRoll(diceCup.getState().arity)
 		}
 		if (diceCup.canSubmitHashes(this._owner)) {
 			this._dispatchOwnAction({
 				type: "DICECUP_HASHES",
 				player: this._owner,
-				seeds: this._diceCup.dices.map(d => d.seed),
-				hashes: this._diceCup.dices.map(d => d.hash),
+				seeds: this._dices.map(d => d.seed),
+				hashes: this._dices.map(d => d.hash),
 			})
-		} else if (diceCup.canSubmitValues(this._owner)) {
+		}
+		if (diceCup.canSubmitValues(this._owner)) {
 			this._dispatchOwnAction({
 				type: "DICECUP_VALUES",
 				player: this._owner,
-				values: this._diceCup.dices.map(d => d.value),
+				values: this._dices.map(d => d.value),
 			})
+			this._dices = null
 		}
 	}
 

@@ -100,7 +100,7 @@ class DiceCup extends Store {
 
 	canSubmitValues(player) {
 		const pid = this.getState().players.indexOf(player)
-		return this.getState().values[pid] === null && this.getState().hashes[pid] !== null
+		return this.getState().values[pid] === null && this.getState().hashes.every(h => h !== null)
 	}
 }
 
