@@ -44,7 +44,7 @@ class Blockchain {
 		const block = {
 			precedingBlock: hash(this.head()),
 			state: hash(state),
-			author: hash(this._publicKey),
+			author: this.owner().finger,
 			payload: payload,
 			signature: null,
 		}
@@ -61,7 +61,10 @@ class Blockchain {
 	}
 
 	owner() {
-		return this._publicKey
+		return {
+			public: this._publicKey,
+			finger: hash(this._publicKey),
+		}
 	}
 
 	_ancestor() {

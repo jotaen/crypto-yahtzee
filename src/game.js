@@ -7,7 +7,6 @@ const { sortBy, noop } = require("./lib/util")
 class Game {
 	constructor(privateKey, otherPlayersPublicKeys, callbacks) {
 		this._blockchain = new Blockchain(privateKey, otherPlayersPublicKeys)
-		this._owner = this._blockchain.owner()
 		this._storePointer = StoreMachine(this._blockchain.participants())
 		this._yahtzee = null
 		this._dices = null
@@ -34,7 +33,7 @@ class Game {
 	select(dices) {
 		this._dispatchOwnAction({
 			type: "SELECT",
-			player: this._owner,
+			player: this._blockchain.owner().public,
 			dices: dices,
 		})
 	}
@@ -50,18 +49,18 @@ class Game {
 		if (this._dices === null) {
 			this._dices = this._callbacks.onRoll(diceCup.getState().arity)
 		}
-		if (diceCup.canSubmitHashes(this._owner)) {
+		if (diceCup.canSubmitHashes(this._blockchain.owner().public)) {
 			this._dispatchOwnAction({
 				type: "DICECUP_HASHES",
-				player: this._owner,
+				player: this._blockchain.owner().public,
 				seeds: this._dices.map(d => d.seed),
 				hashes: this._dices.map(d => d.hash),
 			})
 		}
-		if (diceCup.canSubmitValues(this._owner)) {
+		if (diceCup.canSubmitValues(this._blockchain.owner().public)) {
 			this._dispatchOwnAction({
 				type: "DICECUP_VALUES",
-				player: this._owner,
+				player: this._blockchain.owner().public,
 				values: this._dices.map(d => d.value),
 			})
 			this._dices = null

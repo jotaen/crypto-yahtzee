@@ -23,8 +23,8 @@ describe("[Blockchain] Creation", () => {
 
 		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
 		
-		assert.strictEqual(aliceBlockchain.owner(), ALICE.public)
-		assert.strictEqual(bobBlockchain.owner(), BOB.public)
+		assert.strictEqual(aliceBlockchain.owner().public, ALICE.public)
+		assert.strictEqual(bobBlockchain.owner().public, BOB.public)
 		
 		assert.deepStrictEqual(aliceBlockchain.participants(), [ALICE.public, BOB.public])
 		assert.deepStrictEqual(bobBlockchain.participants(), [ALICE.public, BOB.public])
