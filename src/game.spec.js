@@ -13,8 +13,13 @@ const values = rs => rs.map(r => r.value)
 const defaultCallbacks = (broker, state) => ({
 	onPopulateBlock: block => broker.enqueue(block),
 	onUpdate: newState => state.latest = newState,
-	onSelect: dices => ([dices[0], null, dices[1], null, dices[3]]),
-	onRecord: () => "yahtzee",
+	onTurn: (dices, record, select) => {
+		if (select) {
+			select([dices[0], null, dices[1], null, dices[3]])
+		} else {
+			record("yahtzee")
+		}
+	},
 })
 
 describe("[Game] Flow", () => {
@@ -31,6 +36,7 @@ describe("[Game] Flow", () => {
 
 		// first roll:
 		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.onTurn, 0)
 		assert.strictEqual(state.latest.attempt, 1)
 		assert.strictEqual(state.latest.dices.every(d => d !== null), true)
 
@@ -46,6 +52,9 @@ describe("[Game] Flow", () => {
 
 		// finishing player’s  turn:
 		broker.fanout(1) // record
+		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.onTurn, 1)
+		assert.strictEqual(state.latest.attempt, 1)
 	})
 })
 

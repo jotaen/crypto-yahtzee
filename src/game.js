@@ -49,24 +49,26 @@ class Game {
 
 	_handleTurn(yahtzee) {
 		this._callbacks.onUpdate(yahtzee.getState())
-		if (yahtzee.onTurn() === this._blockchain.owner().public) {
-			if (yahtzee.areAttemptsLeft()) {
-				const dices = this._callbacks.onSelect(yahtzee.getState().dices)
-				this._dispatchOwnAction({
-					type: "SELECT",
-					player: this._blockchain.owner().public,
-					dices: dices,
-				})
-			} else {
-				const category = this._callbacks.onRecord()
-				this._dispatchOwnAction({
-					type: "RECORD",
-					player: this._blockchain.owner().public,
-					category: category,
-				})
-			}
+		if (yahtzee.onTurn() !== this._blockchain.owner().public) {
+			return
+		}
+		const record = category => {
+			this._dispatchOwnAction({
+				type: "RECORD",
+				player: this._blockchain.owner().public,
+				category: category,
+			})
 			this._update()
 		}
+		const select = !yahtzee.areAttemptsLeft() ? null : dices => {
+			this._dispatchOwnAction({
+				type: "SELECT",
+				player: this._blockchain.owner().public,
+				dices: dices,
+			})
+			this._update()
+		}
+		this._callbacks.onTurn(yahtzee.getState().dices, record, select)
 	}
 
 	_handleDicing(diceCup) {
