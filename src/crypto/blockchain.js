@@ -32,7 +32,11 @@ class Blockchain {
 			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
-		transaction(block.payload, this._participants[block.author]) // commit won’t be reached if transaction throws
+		if (this.head().some(b => hash(b) === hash(block))) {
+			return
+		}
+		// commit won’t be reached if transaction throws:
+		transaction(block.payload, this._participants[block.author])
 		this._commit(block)
 	}
 

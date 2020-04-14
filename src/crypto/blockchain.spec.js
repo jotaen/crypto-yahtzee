@@ -167,6 +167,17 @@ describe("[Blockchain] Foreign blocks", () => {
 			() => aliceBlockchain.commitForeignBlock({ someState: 1928 }, bobBlockchain.head()[0]),
 			e => e === "INCOMPATIBLE_STATE"
 		)
+	})
 
+	it("ignores duplicates", () => {
+		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
+		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+
+		bobBlockchain.commitOwnBlock(null, { action: "FOO" })
+		aliceBlockchain.commitForeignBlock(null, bobBlockchain.head()[0])
+
+		const aliceHead = aliceBlockchain.head()
+		aliceBlockchain.commitForeignBlock(null, bobBlockchain.head()[0])
+		assert.deepStrictEqual(aliceBlockchain.head(), aliceHead)
 	})
 })
