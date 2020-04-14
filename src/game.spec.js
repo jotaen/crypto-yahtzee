@@ -32,29 +32,32 @@ describe("[Game] Flow", () => {
 		broker.connect([alice, bob, chris])
 
 		// initialisation phase:
+		assert.strictEqual(state.latest, null)
 		broker.fanout(6) // rolling: 3 players * (1 hashes + 1 values)
+		assert.notStrictEqual(state.latest, null)
 
 		// first roll:
-		broker.fanout(6) // rolling
 		assert.strictEqual(state.latest.onTurn, 0)
-		assert.strictEqual(state.latest.attempt, 1)
-		assert.strictEqual(state.latest.dices.every(d => d !== null), true)
+		assert.strictEqual(state.latest.attempt, 0)
+		assert.strictEqual(state.latest.dices.every(d => d === null), true)
+		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.dices.some(d => d === null), true)
 
 		// second roll, after player on turn has selected:
 		broker.fanout(1) // select
+		assert.strictEqual(state.latest.attempt, 1)
 		broker.fanout(6) // rolling
-		assert.strictEqual(state.latest.attempt, 2)
 		
 		// third roll, after player on turn has selected:
 		broker.fanout(1) // select
+		assert.strictEqual(state.latest.attempt, 2)
 		broker.fanout(6) // rolling
-		assert.strictEqual(state.latest.attempt, 3)
 
 		// finishing player’s  turn:
 		broker.fanout(1) // record
-		broker.fanout(6) // rolling
 		assert.strictEqual(state.latest.onTurn, 1)
-		assert.strictEqual(state.latest.attempt, 1)
+		assert.strictEqual(state.latest.attempt, 0)
+		broker.fanout(6) // rolling
 	})
 })
 

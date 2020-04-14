@@ -6,17 +6,17 @@ const { sortBy, noop } = require("./lib/util")
 class Game {
 	constructor(privateKey, otherPlayersPublicKeys, callbacks) {
 		this._blockchain = new Blockchain(privateKey, otherPlayersPublicKeys)
-		this._storePointer = StoreMachine(this._blockchain.participants())
-		this._yahtzee = null
-		this._diceCup = null
-		this._dices = null
-		this._blockBuffer = {}
 		this._callbacks = {
 			onUpdate: noop,
 			onTurn: noop,
 			onPopulateBlock: noop,
 			...callbacks,
 		}
+		this._storePointer = StoreMachine(this._blockchain.participants(), this._callbacks.onUpdate)
+		this._yahtzee = null
+		this._diceCup = null
+		this._dices = null
+		this._blockBuffer = {}
 		this._update()
 	}
 
@@ -48,7 +48,6 @@ class Game {
 	}
 
 	_handleTurn(yahtzee) {
-		this._callbacks.onUpdate(yahtzee.getState())
 		if (yahtzee.onTurn() !== this._blockchain.owner().public) {
 			return
 		}
@@ -100,7 +99,7 @@ class Game {
 	}
 }
 
-function* StoreMachine(players) {
+function* StoreMachine(players, onUpdate) {
 	const opening = new DiceCup(players.length, players)
 	while(!opening.isRolled()) {
 		yield opening
@@ -108,6 +107,7 @@ function* StoreMachine(players) {
 
 	const orderedPlayers = sortBy(players, opening.retrieveNumbers())
 	const yahtzee = new Yahtzee(orderedPlayers)
+	onUpdate(yahtzee.getState())
 	while(!yahtzee.isFinished()) {
 		if (yahtzee.canRoll()) {
 			const diceCup = new DiceCup(yahtzee.rollingDices(), orderedPlayers)
@@ -118,6 +118,7 @@ function* StoreMachine(players) {
 			yahtzee.dispatch({ type: "ROLL", player: yahtzee.onTurn(), dices })
 		} else {
 			yield yahtzee
+			onUpdate(yahtzee.getState())
 		}
 	}
 
