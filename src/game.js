@@ -12,6 +12,7 @@ class Game {
 		this._dices = null
 		this._blockBuffer = {}
 		this._callbacks = {
+			onUpdate: noop,
 			onTurn: noop,
 			onPopulateBlock: noop,
 			...callbacks,
@@ -35,7 +36,6 @@ class Game {
 		for (let hash in this._blockBuffer) {
 			this.receiveBlock(this._blockBuffer[hash])
 		}
-		return
 	}
 
 	_update() {
@@ -48,8 +48,24 @@ class Game {
 	}
 
 	_handleTurn(yahtzee) {
-		if (yahtzee.onTurn(this._blockchain.owner().public)) {
-			this._callbacks.onTurn(yahtzee.getState())
+		this._callbacks.onUpdate(yahtzee.getState())
+		if (yahtzee.onTurn() === this._blockchain.owner().public) {
+			if (yahtzee.areAttemptsLeft()) {
+				const dices = this._callbacks.onSelect(yahtzee.getState().dices)
+				this._dispatchOwnAction({
+					type: "SELECT",
+					player: this._blockchain.owner().public,
+					dices: dices,
+				})
+			} else {
+				const category = this._callbacks.onRecord()
+				this._dispatchOwnAction({
+					type: "RECORD",
+					player: this._blockchain.owner().public,
+					category: category,
+				})
+			}
+			this._update()
 		}
 	}
 
@@ -90,16 +106,17 @@ function* StoreMachine(players) {
 
 	const orderedPlayers = sortBy(players, opening.retrieveNumbers())
 	const yahtzee = new Yahtzee(orderedPlayers)
-	while(yahtzee.isOngoing()) {
-		if (!yahtzee.isRolling()) {
+	while(!yahtzee.isFinished()) {
+		if (yahtzee.canRoll()) {
+			const diceCup = new DiceCup(yahtzee.rollingDices(), orderedPlayers)
+			while(!diceCup.isRolled()) {
+				yield diceCup
+			}
+			const dices = toDices(diceCup.retrieveNumbers())
+			yahtzee.dispatch({ type: "ROLL", player: yahtzee.onTurn(), dices })
+		} else {
 			yield yahtzee
 		}
-		const diceCup = new DiceCup(yahtzee.rollingDices(), orderedPlayers)
-		while(!diceCup.isRolled()) {
-			yield diceCup
-		}
-		const dices = toDices(diceCup.retrieveNumbers())
-		yahtzee.dispatch({ type: "ROLL", player: yahtzee.onTurn(), dices })
 	}
 
 	return null

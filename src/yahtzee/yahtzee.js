@@ -89,8 +89,8 @@ class Yahtzee extends Store {
 		})
 	}
 
-	isOngoing() {
-		return this.getState().onTurn !== null
+	isFinished() {
+		return this.getState().onTurn === null
 	}
 
 	scorecard(player) {
@@ -98,12 +98,16 @@ class Yahtzee extends Store {
 		return this.getState().scorecards[pid]
 	}
 
-	isRolling() {
+	canRoll() {
 		return this.rollingDices() > 0
 	}
 
 	rollingDices() {
 		return this.getState().dices.filter(d => d === null).length
+	}
+
+	areAttemptsLeft() {
+		return this.getState().attempt < 3
 	}
 
 	onTurn() {

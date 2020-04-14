@@ -10,26 +10,42 @@ const hashes = rs => rs.map(r => r.hash)
 const seeds = rs => rs.map(r => r.seed)
 const values = rs => rs.map(r => r.value)
 
-const defaultCallbacks = broker => ({
+const defaultCallbacks = (broker, state) => ({
 	onPopulateBlock: block => broker.enqueue(block),
+	onUpdate: newState => state.latest = newState,
+	onSelect: dices => ([dices[0], null, dices[1], null, dices[3]]),
+	onRecord: () => "yahtzee",
 })
 
-describe.only("[Game] Flow", () => {
+describe("[Game] Flow", () => {
 	it("1. Initialisation (determine turn order through rolling)", () => {
 		const broker = new Broker()
-		const alice = new Game(ALICE, [BOB.public, CHRIS.public], defaultCallbacks(broker))
-		const bob = new Game(BOB, [ALICE.public, CHRIS.public], defaultCallbacks(broker))
-		const chris = new Game(CHRIS, [BOB.public, ALICE.public], defaultCallbacks(broker))
+		const state = { latest: null }
+		const alice = new Game(ALICE, [BOB.public, CHRIS.public], defaultCallbacks(broker, state))
+		const bob = new Game(BOB, [ALICE.public, CHRIS.public], defaultCallbacks(broker, state))
+		const chris = new Game(CHRIS, [BOB.public, ALICE.public], defaultCallbacks(broker, state))
 		broker.connect([alice, bob, chris])
 
 		// initialisation phase:
-		broker.fanout(6) // 3 players * (1 hashes + 1 values)
+		broker.fanout(6) // rolling: 3 players * (1 hashes + 1 values)
 
 		// first roll:
-		broker.fanout(6)
+		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.attempt, 1)
+		assert.strictEqual(state.latest.dices.every(d => d !== null), true)
 
-		// first player selects dices:
+		// second roll, after player on turn has selected:
+		broker.fanout(1) // select
+		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.attempt, 2)
+		
+		// third roll, after player on turn has selected:
+		broker.fanout(1) // select
+		broker.fanout(6) // rolling
+		assert.strictEqual(state.latest.attempt, 3)
 
+		// finishing player’s  turn:
+		broker.fanout(1) // record
 	})
 })
 
