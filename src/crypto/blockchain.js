@@ -25,9 +25,13 @@ class Blockchain {
 		})]]
 	}
 
+	isCompatible(block) {
+		return [hash(this.head()), hash(this._ancestor())].includes(block.precedingBlock)
+	}
+
 	commitForeignBlock(state, block, transaction = noop) {
 		;[
-			["INCOMPATIBLE_BLOCK", () => [hash(this.head()), hash(this._ancestor())].includes(block.precedingBlock)],
+			["INCOMPATIBLE_BLOCK", () => this.isCompatible(block)],
 			["MALFORMED_BLOCK", () => isValidFormat(block)],
 			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],

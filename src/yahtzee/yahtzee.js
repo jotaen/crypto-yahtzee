@@ -98,6 +98,10 @@ class Yahtzee extends Store {
 		return this.getState().scorecards[pid]
 	}
 
+	isRolling() {
+		return this.rollingDices() > 0
+	}
+
 	rollingDices() {
 		return this.getState().dices.filter(d => d === null).length
 	}
