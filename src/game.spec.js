@@ -11,7 +11,6 @@ const seeds = rs => rs.map(r => r.seed)
 const values = rs => rs.map(r => r.value)
 
 const defaultCallbacks = broker => ({
-	onRoll: arity => Array.from(Array(arity)).map(() => random()),
 	onPopulateBlock: block => broker.enqueue(block),
 })
 
@@ -45,6 +44,27 @@ describe("[Game] Edge cases", () => {
 
 		const rs = [random(), random(), random()]
 		bobBlockchain.commitOwnBlock(
+			null,
+			{ type: "DICECUP_HASHES", player: CHRIS.public, seeds: seeds(rs), hashes: hashes(rs) }
+		)
+
+		assert.throws(
+			() => alice.receiveBlock(bobBlockchain.head()[0]),
+			e => e === "AUTHORISATION_FAILURE"
+		)
+	})
+
+	it("can handle when blocks come in in wrong order", () => {
+		const alice = new Game(ALICE, [BOB.public, CHRIS.public], defaultCallbacks(new Broker()))
+		const bobBlockchain = new Blockchain(BOB, [ALICE.public, CHRIS.public])
+		const chrisBlockchain = new Blockchain(CHRIS, [ALICE.public, BOB.public])
+
+		const rs = [random(), random(), random()]
+		bobBlockchain.commitOwnBlock(
+			null,
+			{ type: "DICECUP_HASHES", player: BOB.public, seeds: seeds(rs), hashes: hashes(rs) }
+		)
+		chrisBlockchain.commitOwnBlock(
 			null,
 			{ type: "DICECUP_HASHES", player: CHRIS.public, seeds: seeds(rs), hashes: hashes(rs) }
 		)

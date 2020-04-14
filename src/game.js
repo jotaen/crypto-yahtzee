@@ -1,6 +1,5 @@
-const { DiceCup, toDices } = require("./crypto/dicecup")
+const { DiceCup, toDices, random } = require("./crypto/dicecup")
 const { Blockchain } = require("./crypto/blockchain")
-const { hash } = require("./crypto/hash")
 const { Yahtzee } = require("./yahtzee/yahtzee")
 const { sortBy, noop } = require("./lib/util")
 
@@ -12,7 +11,6 @@ class Game {
 		this._diceCup = null
 		this._dices = null
 		this._callbacks = {
-			onRoll: noop,
 			onSelect: noop,
 			onRecord: noop,
 			onPopulateBlock: noop,
@@ -41,6 +39,9 @@ class Game {
 
 	_update() {
 		const currentStore = this._storePointer.next().value
+		if (currentStore instanceof Yahtzee) {
+			// TODO
+		}
 		if (currentStore instanceof DiceCup) {
 			this._handleDicing(currentStore)
 		}
@@ -49,7 +50,7 @@ class Game {
 	_handleDicing(diceCup) {
 		if (this._diceCup !== diceCup) {
 			this._diceCup = diceCup
-			this._dices = this._callbacks.onRoll(diceCup.getState().arity)
+			this._dices = Array.from(Array(diceCup.getState().arity)).map(() => random())
 		}
 		if (diceCup.canSubmitHashes(this._blockchain.owner().public)) {
 			this._dispatchOwnAction({
