@@ -23,9 +23,9 @@ class Game {
 
 	receiveBlock(block) {
 		this._blockchain.commitForeignBlock(this._yahtzee, block, (payload, author) => {
-			// if (author !== payload.player) {
-			// 	throw "AUTHORISATION_FAILURE"
-			// }
+			if (author !== payload.player) {
+				throw "AUTHORISATION_FAILURE"
+			}
 			this._storePointer.next().value.dispatch(block.payload)
 		})
 		this._update()

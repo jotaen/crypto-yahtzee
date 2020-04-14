@@ -1,11 +1,13 @@
 const assert = require("assert")
 const { Game } = require("./game")
 const { random } = require("./crypto/dicecup")
+const { Blockchain } = require("./crypto/blockchain")
 
-const { ALICE, BOB } = require("./crypto/rsa-testdata.json")
+const { ALICE, BOB, CHRIS } = require("./crypto/rsa-testdata.json")
 
-const hashes = rs => rs.map(r => r.value.hash)
-const values = rs => rs.map(r => r.value.value)
+const hashes = rs => rs.map(r => r.hash)
+const seeds = rs => rs.map(r => r.seed)
+const values = rs => rs.map(r => r.value)
 
 const defaultCallbacks = buffer => ({
 	onRoll: arity => Array.from(Array(arity)).map(() => random()),
@@ -26,5 +28,23 @@ describe("[Game] Flow", () => {
 		assert.strictEqual(buffer.length, 2)
 		alice.receiveBlock(buffer.shift())
 		bob.receiveBlock(buffer.shift())
+	})
+})
+
+describe("[Game] Edge cases", () => {
+	it("Only accepts blocks where player is author", () => {
+		const alice = new Game(ALICE, [BOB.public, CHRIS.public], defaultCallbacks([]))
+		const bobBlockchain = new Blockchain(BOB, [ALICE.public, CHRIS.public])
+
+		const rs = [random(), random(), random()]
+		bobBlockchain.commitOwnBlock(
+			null,
+			{ type: "DICECUP_HASHES", player: CHRIS.public, seeds: seeds(rs), hashes: hashes(rs) }
+		)
+
+		assert.throws(
+			() => alice.receiveBlock(bobBlockchain.head()[0]),
+			e => e === "AUTHORISATION_FAILURE"
+		)
 	})
 })
