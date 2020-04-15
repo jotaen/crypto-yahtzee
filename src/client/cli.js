@@ -1,7 +1,7 @@
 const inquirer = require("inquirer")
-const { generateKeyPair } = require("../../crypto/rsa")
+const { generateKeyPair } = require("../crypto/rsa")
 const chalk = require("chalk")
-const { count, sum, UPPER_SECTION, LOWER_SECTION, createScorecard } = require("../../yahtzee/scorecard")
+const { count, sum, UPPER_SECTION, LOWER_SECTION, createScorecard } = require("../yahtzee/scorecard")
 
 console.clear()
 

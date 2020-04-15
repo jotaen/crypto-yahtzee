@@ -14,7 +14,7 @@ server.on("connection", (client, request) => {
     if (!recipient || !recipient.readyState === WebSocket.OPEN) {
       return
     }
-    recipient.send(JSON.stringify(message.block))
+    recipient.send(JSON.stringify(message.data))
   })
 
   client.on("close", () => {
