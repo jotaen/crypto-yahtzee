@@ -5,7 +5,8 @@ class Transport {
     this._send = send
     this._processData = processData
     this._config = {
-      retryIntervalMs: 50,
+      retryIntervalMs: 200,
+      retryTimeoutMs: 30000,
       ...config
     }
     this._acknowledged = new Set()
@@ -45,14 +46,17 @@ class Transport {
       }
     })
   }
-  
-  _deliverMessage(message) {
+
+  _deliverMessage(message, attemptNr = 1) {
     this._send(JSON.stringify(message))
+    if (this._config.retryIntervalMs * attemptNr > this._config.retryTimeoutMs) {
+      throw "MESSAGE_DELIVERY_FAILED"
+    }
     setTimeout(() => {
       if (!this._acknowledged.has(message.uuid)) {
-        this._deliverMessage(message)
+        this._deliverMessage(message, attemptNr + 1)
       }
-    }, this._config.retryIntervalMs);
+    }, this._config.retryIntervalMs)
   }
 }
 

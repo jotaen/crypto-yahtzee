@@ -87,6 +87,7 @@ describe("[Transport] Sending messages", () => {
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).recipient, "ia79s6dtfiausdf")
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).data, data)
     assert.strictEqual(isHexString(32)(JSON.parse(socket.calls[0]).uuid), true)
+    t.onMessage(`{ "type": "ack", "uuid": "${JSON.parse(socket.calls[0]).uuid}" }`)
   })
 
   it("retries sending messages when they don’t get acknowledged", (done) => {
