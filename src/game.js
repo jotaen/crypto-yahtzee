@@ -16,14 +16,12 @@ class Game {
 		this._yahtzee = null
 		this._diceCup = null
 		this._dices = null
-		this._blockBuffer = {}
 		this._update()
 	}
 
 	receiveBlock(block) {
 		if (!this._blockchain.isCompatible(block)) {
-			this._blockBuffer[block.precedingBlock] = block
-			return
+			return false
 		}
 		this._blockchain.commitForeignBlock(this._yahtzee, block, (payload, author) => {
 			if (author !== payload.player) {
@@ -32,10 +30,7 @@ class Game {
 			this._storePointer.next().value.dispatch(block.payload)
 		})
 		this._update()
-		delete this._blockBuffer[block.precedingBlock]
-		for (let hash in this._blockBuffer) {
-			this.receiveBlock(this._blockBuffer[hash])
-		}
+		return true
 	}
 
 	_update() {

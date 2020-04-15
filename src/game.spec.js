@@ -77,43 +77,4 @@ describe("[Game] Edge cases", () => {
 			e => e === "AUTHORISATION_FAILURE"
 		)
 	})
-
-	it("can handle when blocks come in in wrong order", () => {
-		const alicePopulatedBlocks = []
-		const alice = new Game(ALICE, [BOB.public, CHRIS.public], {
-			onPopulateBlock: block => alicePopulatedBlocks.push(block)
-		})
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public, CHRIS.public])
-		const chrisBlockchain = new Blockchain(CHRIS, [ALICE.public, BOB.public])
-
-		// Bob and Chris generate their hashes
-		const bobRs = [random(), random(), random()]
-		bobBlockchain.commitOwnBlock(
-			null,
-			{ type: "DICECUP_HASHES", player: BOB.public, seeds: seeds(bobRs), hashes: hashes(bobRs) }
-		)
-		const chrisRs = [random(), random(), random()]
-		chrisBlockchain.commitOwnBlock(
-			null,
-			{ type: "DICECUP_HASHES", player: CHRIS.public, seeds: seeds(chrisRs), hashes: hashes(chrisRs) }
-		)
-
-		// Bob and Chris send out their data, but the connection [Alice-Chris] is delayed
-		alice.receiveBlock(bobBlockchain.head()[0])
-		bobBlockchain.commitForeignBlock(null, chrisBlockchain.head()[0])
-		bobBlockchain.commitForeignBlock(null, alicePopulatedBlocks[0])
-
-		// Bob’s hashing is complete now, so he proceeds populating his values
-		bobBlockchain.commitOwnBlock(null, { type: "DICECUP_VALUES", player: BOB.public, values: values(bobRs) })
-
-		// Bob already sends his new block to Alice
-		// Alice cannot process it yet, but she will already accept it anyway
-		assert.doesNotThrow(() => alice.receiveBlock(bobBlockchain.head()[0]))
-
-		// Now Alice finally receives Chris block.
-		// That way she can flush her block buffer and proceed
-		alice.receiveBlock(chrisBlockchain.head()[0])
-		assert.strictEqual(alicePopulatedBlocks.length, 2)
-		assert.strictEqual(alicePopulatedBlocks[1].precedingBlock, bobBlockchain.head()[0].precedingBlock)
-	})
 })

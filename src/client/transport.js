@@ -9,6 +9,7 @@ class Transport {
       ...config
     }
     this._acknowledged = new Set()
+    this._buffer = new Map()
   }
 
   sendData(data) {
@@ -19,15 +20,6 @@ class Transport {
     })
   }
 
-  _deliverMessage(message) {
-    this._send(JSON.stringify(message))
-    setTimeout(() => {
-      if (!this._acknowledged.has(message.uuid)) {
-        this._deliverMessage(message)
-      }
-    }, this._config.retryIntervalMs);
-  }
-
   onMessage(blob) {
     const message = JSON.parse(blob)
     if (message.type === "ack") {
@@ -36,12 +28,30 @@ class Transport {
       if (this._acknowledged.has(message.uuid)) {
         return
       }
-      this._processData(message.data)
       this._acknowledged.add(message.uuid)
       this._send(JSON.stringify({ type: "ack", uuid: message.uuid }))
+      if (!this._processData(message.data)) {
+        this._buffer.set(message.uuid, message.data)
+      }
     }
   }
+
+  retryAllPending() {
+    this._buffer.forEach((data, uuid) => {
+      if (this._processData(data)) {
+        this._buffer.delete(uuid)
+      }
+    })
+  }
   
+  _deliverMessage(message) {
+    this._send(JSON.stringify(message))
+    setTimeout(() => {
+      if (!this._acknowledged.has(message.uuid)) {
+        this._deliverMessage(message)
+      }
+    }, this._config.retryIntervalMs);
+  }
 }
 
 module.exports = { Transport }

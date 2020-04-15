@@ -5,13 +5,18 @@ const { Transport } = require("./transport")
 
 class CallSpy {
   constructor() { this.calls = [] }
-  invoke(data) { this.calls.push(data) }
+  return(value) {
+    return data => {
+      this.calls.push(data)
+      return value
+    }
+  }
 }
 
 describe("[Transport] Receiving messages", () => {
   it("passes incoming data to processor", () => {
     const processor = new CallSpy()
-    const t = new Transport(noop, d => processor.invoke(d))
+    const t = new Transport(noop, processor.return(true))
 
     t.onMessage(`{ "type": "data", "uuid": "1", "data": { "foo": true } }`)
     assert.deepStrictEqual(processor.calls[0], { foo: true })
@@ -19,7 +24,7 @@ describe("[Transport] Receiving messages", () => {
 
   it("acknowledges incoming messages via their uuid", () => {
     const socket = new CallSpy()
-    const t = new Transport(d => socket.invoke(d), noop)
+    const t = new Transport(socket.return(), noop)
     const uuid = "172y8ughasf"
 
     t.onMessage(`{ "type": "data", "uuid": "${uuid}", "data": { "foo": true } }`)
@@ -29,19 +34,52 @@ describe("[Transport] Receiving messages", () => {
   it("doesn’t pass on duplicate messages multiple times (determined by uuid)", () => {
     const socket = new CallSpy()
     const processor = new CallSpy()
-    const t = new Transport(d => socket.invoke(d), d => processor.invoke(d))
+    const t = new Transport(socket.return(), processor.return(true))
 
     t.onMessage(`{ "type": "data", "uuid": "9871236", "data": { "foo": true } }`)
     t.onMessage(`{ "type": "data", "uuid": "9871236", "data": { "foo": true } }`)
     assert.strictEqual(processor.calls.length, 1)
     assert.strictEqual(socket.calls.length, 1)
   })
+
+  it("acknowledges messages even if processor doesn’t accept them", () => {
+    const socket = new CallSpy()
+    const processor = new CallSpy()
+    const t = new Transport(socket.return(), processor.return(false))
+    t.onMessage(`{ "type": "data", "uuid": "9871236", "data": { "foo": true } }`)
+    assert.strictEqual(socket.calls.length, 1)
+  })
+
+  it("stores unprocessable messages so that they can be retried later", () => {
+    const spyControl = { returnVal: false }
+    const processor = new CallSpy()
+    const socket = new CallSpy()
+    const t = new Transport(socket.return(), data => {
+      return processor.return(spyControl.returnVal)(data)
+    })
+
+    t.onMessage(`{ "type": "data", "uuid": "3difuyg187", "data": { "baz": [] } }`)
+    t.onMessage(`{ "type": "data", "uuid": "o87df8q982", "data": { "foo": true } }`)
+    assert.strictEqual(processor.calls.length, 2)
+    t.retryAllPending()
+    assert.strictEqual(processor.calls.length, 4)
+
+    spyControl.returnVal = true
+    t.onMessage(`{ "type": "data", "uuid": "19g83yhas3", "data": { "bar": 123 } }`)
+    assert.strictEqual(processor.calls.length, 5)
+    t.retryAllPending()
+    assert.strictEqual(processor.calls.length, 7)
+
+    // Buffer is cleared after successful delivery
+    t.retryAllPending()
+    assert.strictEqual(processor.calls.length, 7)
+  })
 })
 
 describe("[Transport] Sending messages", () => {
   it("sends out data", () => {
     const socket = new CallSpy()
-    const t = new Transport(d => socket.invoke(d), noop)
+    const t = new Transport(socket.return(), noop)
     const data = { foo: 6 }
 
     t.sendData(data)
@@ -52,7 +90,7 @@ describe("[Transport] Sending messages", () => {
 
   it("retries sending messages when they don’t get acknowledged", (done) => {
     const socket = new CallSpy()
-    const t = new Transport(d => socket.invoke(d), noop, { retryIntervalMs: 1 })
+    const t = new Transport(socket.return(), noop, { retryIntervalMs: 1 })
     t.sendData({ foo: 6 })
     setTimeout(() => {
       const msg = JSON.parse(socket.calls[0])
