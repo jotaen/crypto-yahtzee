@@ -14,4 +14,8 @@ cli() {
   node ./src/runtime/cli/index.js
 }
 
+server() {
+  node ./src/runtime/broker/index.js
+}
+
 $1 ${@:2}
