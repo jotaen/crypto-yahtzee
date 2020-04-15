@@ -23,3 +23,8 @@ module.exports.generateKeyPair = () => {
 		privateKeyEncoding: { type: "pkcs1", format: "pem" },
 	})
 }
+
+module.exports.randomBytes = (outputFormat, length = 1) => {
+	const a = new Uint8Array(length)
+	return Buffer.from(crypto.randomFillSync(a).buffer, a.byteOffset, a.byteLength).toString(outputFormat)
+}

@@ -1,4 +1,5 @@
 const { hash, isHexString, isHash } = require("./hash")
+const { randomBytes } = require("./rsa")
 const { Store } = require("../lib/store")
 const { isString, assert, deepClone } = require("../lib/util")
 
@@ -104,16 +105,10 @@ class DiceCup extends Store {
 	}
 }
 
-const random32bitHexString = () => Math.random()
-	.toString(16)
-	.substr("0.".length) // float prefix
-	.padEnd(VALUE_STRING_LENGTH, "0")
-	.substr(0, VALUE_STRING_LENGTH)
-
 const random = () => {
-	const value = random32bitHexString()
+	const value = randomBytes("hex", 4)
 	const seed = Array.from(Array(hash("").length/VALUE_STRING_LENGTH))
-		.map(() => random32bitHexString())
+		.map(() => randomBytes("hex", 4))
 		.join("")
 	return {
 		hash: hash(seed + value),
