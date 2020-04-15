@@ -39,7 +39,7 @@ describe("[Transport] Receiving messages", () => {
     t.onMessage(`{ "type": "data", "uuid": "9871236", "data": { "foo": true } }`)
     t.onMessage(`{ "type": "data", "uuid": "9871236", "data": { "foo": true } }`)
     assert.strictEqual(processor.calls.length, 1)
-    assert.strictEqual(socket.calls.length, 1)
+    assert.strictEqual(socket.calls.length, 2) // sends ack every time though!
   })
 
   it("acknowledges messages even if processor doesn’t accept them", () => {
@@ -82,8 +82,9 @@ describe("[Transport] Sending messages", () => {
     const t = new Transport(socket.return(), noop)
     const data = { foo: 6 }
 
-    t.sendData(data)
+    t.sendData("ia79s6dtfiausdf", data)
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).type, "data")
+    assert.deepStrictEqual(JSON.parse(socket.calls[0]).recipient, "ia79s6dtfiausdf")
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).data, data)
     assert.strictEqual(isHexString(32)(JSON.parse(socket.calls[0]).uuid), true)
   })
@@ -91,7 +92,7 @@ describe("[Transport] Sending messages", () => {
   it("retries sending messages when they don’t get acknowledged", (done) => {
     const socket = new CallSpy()
     const t = new Transport(socket.return(), noop, { retryIntervalMs: 1 })
-    t.sendData({ foo: 6 })
+    t.sendData("o8s97ftguyasdf", { foo: 6 })
     setTimeout(() => {
       const msg = JSON.parse(socket.calls[0])
       t.onMessage(`{ "type": "ack", "uuid": "${msg.uuid}" }`)
