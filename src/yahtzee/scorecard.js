@@ -1,4 +1,4 @@
-module.exports.createScorecard = initialValues => ({
+const createScorecard = initialValues => ({
 	aces: null,
 	twos: null,
 	threes: null,
@@ -28,7 +28,7 @@ const sumAllValues = cs => cs.reduce((a, c) => a + c.count*c.val, 0)
 
 const sumValue = (cs, val) => val * cs.find(c => c.val === val).count
 
-module.exports.count = dices => {
+const count = dices => {
 	cs = diceCounter(dices)
 	return {
 		aces: sumValue(cs, 1),
@@ -47,13 +47,20 @@ module.exports.count = dices => {
 	}
 }
 
-module.exports.isFilledUp = sc => Object.values(sc).filter(s => s === null).length === 0
+const isFilledUp = sc => Object.values(sc).filter(s => s === null).length === 0
 
-module.exports.sum = sc => {
-	const upperPoints = sc.aces + sc.twos + sc.threes + sc.fours + sc.fives + sc.sixes
+const UPPER_SECTION = ["aces", "twos", "threes", "fours", "fives", "sixes"]
+const LOWER_SECTION = ["threeOfAKind", "fourOfAKind", "fullHouse", "smallStraight", "largeStraight", "yahtzee", "chance"]
+
+const sum = sc => {
+	const upperPoints = UPPER_SECTION.map(n => sc[n]).reduce((a, c) => a+c, 0)
 	const bonus = upperPoints >= 63 ? 35 : 0
-	const lowerTotal = sc.threeOfAKind + sc.fourOfAKind + sc.fullHouse + sc.smallStraight + sc.largeStraight + sc.yahtzee + sc.chance
+	const lowerTotal = LOWER_SECTION.map(n => sc[n]).reduce((a, c) => a + c, 0)
 	const upperTotal = upperPoints + bonus
 	const total = upperTotal + lowerTotal
 	return { upperPoints, bonus, upperTotal, lowerTotal, total }
+}
+
+module.exports = {
+	sum, isFilledUp, count, createScorecard, UPPER_SECTION, LOWER_SECTION
 }
