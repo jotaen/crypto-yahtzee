@@ -1,15 +1,5 @@
 const inquirer = require("inquirer")
-var swarm = require("discovery-swarm")
-const chalk = require('chalk')
-
-var sw = swarm()
-
-sw.listen(1000)
-sw.join('aoisdyf87asdfjsadfiuhd') // can be any id/name/hash
-
-sw.on('connection', function (connection) {
-  console.log('found + connected to peer')
-})
+const chalk = require("chalk")
 
 inquirer
   .prompt([

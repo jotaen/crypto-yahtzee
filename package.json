@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "chalk": "^4.0.0",
-    "discovery-swarm": "^6.1.0",
     "inquirer": "^7.1.0",
     "json-stable-stringify": "^1.0.1",
     "redux": "^4.0.5"
