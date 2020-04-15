@@ -1,0 +1,17 @@
+#!/bin/bash
+
+build() {
+  npm i
+}
+
+test() {
+  ./node_modules/.bin/mocha ${@} \
+    --recursive \
+    'src/**/*.spec.js'
+}
+
+cli() {
+  node ./src/runtime/cli/index.js
+}
+
+$1 ${@:2}
