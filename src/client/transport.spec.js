@@ -28,7 +28,10 @@ describe("[Transport] Receiving messages", () => {
     const uuid = "172y8ughasf"
 
     t.onMessage(`{ "type": "data", "uuid": "${uuid}", "data": { "foo": true } }`)
-    assert.strictEqual(socket.calls[0], JSON.stringify({ type: "ack", uuid: "172y8ughasf" }))
+    assert.strictEqual(socket.calls[0], JSON.stringify({
+      type: "ack",
+      uuid: "172y8ughasf"
+    }))
   })
 
   it("doesn’t pass on duplicate messages multiple times (determined by uuid)", () => {
@@ -87,21 +90,21 @@ describe("[Transport] Sending messages", () => {
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).recipient, "ia79s6dtfiausdf")
     assert.deepStrictEqual(JSON.parse(socket.calls[0]).data, data)
     assert.strictEqual(isHexString(32)(JSON.parse(socket.calls[0]).uuid), true)
-    t.onMessage(`{ "type": "ack", "uuid": "${JSON.parse(socket.calls[0]).uuid}" }`)
   })
 
-  it("retries sending messages when they don’t get acknowledged", (done) => {
+  it("retries sending messages when they don’t get acknowledged", () => {
+    let retries = 0
     const socket = new CallSpy()
-    const t = new Transport(socket.return(), noop, { retryIntervalMs: 1 })
+    const retryFn = fn => {
+      retries++
+      if (retries > 5) {
+        const msg = JSON.parse(socket.calls[0])
+        t.onMessage(`{ "type": "ack", "uuid": "${msg.uuid}" }`)
+      }
+      fn()
+    }
+    const t = new Transport(socket.return(), noop, retryFn)
     t.sendData("o8s97ftguyasdf", { foo: 6 })
-    setTimeout(() => {
-      const msg = JSON.parse(socket.calls[0])
-      t.onMessage(`{ "type": "ack", "uuid": "${msg.uuid}" }`)
-      const retriesUntilSuccess = socket.calls.length
-      setTimeout(() => {
-        assert.strictEqual(socket.calls.length, retriesUntilSuccess)
-        done()
-      }, 5)
-    }, 5)
+    assert.strictEqual(socket.calls.length, 7)
   })
 })

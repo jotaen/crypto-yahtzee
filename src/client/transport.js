@@ -1,14 +1,11 @@
 const { randomBytes } = require("../crypto/rsa")
+const { noop } = require("../lib/util")
 
 class Transport {
-  constructor(send, processData, config) {
+  constructor(send, processData, retryFn = noop) {
     this._send = send
     this._processData = processData
-    this._config = {
-      retryIntervalMs: 200,
-      retryTimeoutMs: 30000,
-      ...config
-    }
+    this._retryFn = retryFn
     this._acknowledged = new Set()
     this._processed = new Set()
     this._buffer = new Map()
@@ -47,16 +44,11 @@ class Transport {
     })
   }
 
-  _deliverMessage(message, attemptNr = 1) {
+  _deliverMessage(message) {
     this._send(JSON.stringify(message))
-    if (this._config.retryIntervalMs * attemptNr > this._config.retryTimeoutMs) {
-      throw "MESSAGE_DELIVERY_FAILED"
+    if (!this._acknowledged.has(message.uuid)) {
+      this._retryFn(() => this._deliverMessage(message))
     }
-    setTimeout(() => {
-      if (!this._acknowledged.has(message.uuid)) {
-        this._deliverMessage(message, attemptNr + 1)
-      }
-    }, this._config.retryIntervalMs)
   }
 }
 
