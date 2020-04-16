@@ -11,11 +11,11 @@ test() {
 }
 
 cli() {
-  node ./src/runtime/cli/index.js
+  node --inspect-brk=0.0.0.0 ./src/client/cli.js ${@}
 }
 
 server() {
-  node ./src/runtime/broker/index.js
+  node ./src/runtime/broker/index.js ${@}
 }
 
 $1 ${@:2}

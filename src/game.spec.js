@@ -4,7 +4,7 @@ const { random } = require("./crypto/dicecup")
 const { Blockchain } = require("./crypto/blockchain")
 const { Broker } = require("./lib/fakebroker")
 
-const { ALICE, BOB, CHRIS } = require("./crypto/rsa-testdata.json")
+const { ALICE, BOB, CHRIS } = require("./lib/rsa-testdata.json")
 
 const hashes = rs => rs.map(r => r.hash)
 const seeds = rs => rs.map(r => r.seed)
