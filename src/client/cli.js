@@ -10,29 +10,7 @@ const KEY = {
   file: "yahtzee",
 }
 
-// const transport = new Transport(
-//   ownerKeyPair.public,
-//   otherPlayersPublicKeys,
-//   fn => setTimeout(fn, 200)
-// )
-
-// const game = new Game(ALICE, [BOB.public], {
-//   onUpdate: () => {}, // TODO wire to CLI
-//   onTurn: () => {}, // TODO wire to CLI
-//   onPopulateBlock: block => transport.fanOut(block),
-// })
-// transport.onReceiveMessage(block => game.receiveBlock(block))
-
-const connect = () => {
-  const websocket = new WebSocket("ws://localhost:8080")
-  transport.wireUp(websocket)
-  websocket.onclose(() => {
-    transport.wireUp(null)
-    connect()
-  })
-}
-
-const ensureOwnKeys = () => fileSystem.stat(KEY.dir + KEY.file)
+const readOrCreateOwnerKeys = () => fileSystem.stat(KEY.dir + KEY.file)
   .catch(() => generateKeyPair()
     .then(keys => Promise.all([
       fileSystem.writeFile(KEY.dir + KEY.file + ".pub", keys.publicKey),
@@ -44,11 +22,25 @@ const ensureOwnKeys = () => fileSystem.stat(KEY.dir + KEY.file)
   ]))
   .then(keys => keyObjects(keys[0].toString(), keys[1].toString()))
 
-Promise.all([
-  ensureOwnKeys(),
-  // TODO connect(),
-]).then(vs => {
-  const ownerKeys = vs[0]
-  return mainMenu(ownerKeys)
-}).then(console.log)
+readOrCreateOwnerKeys().then(ownerKeys => {
+  return mainMenu(ownerKeys).then(otherPlayersPublicKeys => {
+    const transport = new Transport(
+      ownerKeys.public,
+      otherPlayersPublicKeys,
+      fn => setTimeout(fn, 200)
+    )
+    const websocket = new WebSocket("ws://localhost:8080")
+    transport.wireUp(websocket)
+    websocket.onclose(() => {
+      transport.wireUp(null)
+      connectWebsocket()
+    })
+    const game = new Game(ownerKeys, otherPlayersPublicKeys, {
+      onUpdate: () => { }, // TODO wire to CLI
+      onTurn: () => { }, // TODO wire to CLI
+      onPopulateBlock: block => transport.fanOut(block),
+    })
+    transport.onReceiveMessage(block => game.receiveBlock(block))
+  })
+})
 .catch(console.log)

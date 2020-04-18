@@ -15,8 +15,8 @@ cli() {
   node ./src/client/cli.js ${@}
 }
 
-server() {
-  node ./src/runtime/broker/index.js ${@}
+broker() {
+  node ./broker/index.js ${@}
 }
 
 $1 ${@:2}
