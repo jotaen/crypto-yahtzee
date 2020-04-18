@@ -39,11 +39,20 @@ const keyObjects = (publicKeyString, privateKeyString = null) => {
 	}
 }
 
+const isPublicKey = string => {
+	try {
+		crypto.createPublicKey(string)
+		return true
+	} catch (e) {
+		return false
+	}
+}
+
 const randomBytes = (outputFormat, length = 1) => {
 	const a = new Uint8Array(length)
 	return Buffer.from(crypto.randomFillSync(a).buffer, a.byteOffset, a.byteLength).toString(outputFormat)
 }
 
 module.exports = {
-	sign, verify, generateKeyPair, keyObjects, randomBytes, toString
+	sign, verify, generateKeyPair, keyObjects, randomBytes, toString, isPublicKey
 }

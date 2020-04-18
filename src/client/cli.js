@@ -1,7 +1,7 @@
 const WebSocket = require("ws")
 const { Transport } = require("./transport")
 const { Game } = require("../game")
-const { mainMenu } = require("./screens")
+const { mainMenu } = require("./menu")
 const { generateKeyPair, keyObjects } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
 
@@ -45,9 +45,10 @@ const ensureOwnKeys = () => fileSystem.stat(KEY.dir + KEY.file)
   .then(keys => keyObjects(keys[0].toString(), keys[1].toString()))
 
 Promise.all([
-  Promise.resolve(), // TODO `connect`
   ensureOwnKeys(),
+  // TODO connect(),
 ]).then(vs => {
-  const ownerKeys = vs[1]
-  mainMenu(ownerKeys)
-}).catch(console.log)
+  const ownerKeys = vs[0]
+  return mainMenu(ownerKeys)
+}).then(console.log)
+.catch(console.log)
