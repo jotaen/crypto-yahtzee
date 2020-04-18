@@ -1,8 +1,10 @@
 const inquirer = require("inquirer")
 const chalk = require("chalk")
+const process = require("process")
+const rsa = require("../crypto/rsa")
 const { count, sum, UPPER_SECTION, LOWER_SECTION, createScorecard } = require("../yahtzee/scorecard")
 
-module.exports.renderStartScreen = () => {
+const renderMainBanner = () => {
   console.clear()
   console.log(chalk.bold("=".repeat(10) + " CRYPTO YAHTZEE " + "=".repeat(10)))
   console.log(chalk.redBright(`
@@ -14,17 +16,58 @@ module.exports.renderStartScreen = () => {
      |     o |/   \\ o/  o  /
      '-------'     \\/____o/
   `))
-  return inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "name",
-        message: "What’s your name?",
-        validate: n => n.length > 0 && n.length <= 10 ?
-          true : "Name must be between 1 and 10 characters long",
-      }
-    ])
+  console.log("")
 }
+
+const displayKey = ownerKeys => {
+  renderMainBanner()
+  console.log(chalk.bold("This is your public key. Give it to the people you want to play with.\n"))
+  console.log(rsa.toString(ownerKeys.public))
+  return inquirer
+    .prompt({
+      type: "confirm",
+      name: "return",
+      message: "Go back",
+      default: true,
+    })
+}
+
+const mainMenu = ownerKeys => {
+  renderMainBanner()
+  return inquirer
+    .prompt({
+      type: "list",
+      name: "action",
+      message: "Main Menu",
+      choices: [
+        {name: "Initiate game", value: "INIT"},
+        {name: "Join game", value: "JOIN"},
+        {name: "Display key", value: "DISPLAY_KEY"},
+        {name: "Quit", value: "QUIT"},
+      ]
+    }).then(answers => {
+      console.log(answers)
+      if (answers.action === "INIT") {
+        return initiateGame()
+      } else if (answers.action === "JOIN") {
+        return joinGame()
+      } else if (answers.action === "DISPLAY_KEY") {
+        return displayKey(ownerKeys)
+      } else {
+        process.exit(0)
+      }
+    }).then(() => {
+      mainMenu(ownerKeys)
+    })
+}
+
+// {
+//   type: "input",
+//     name: "publicKey",
+//       message: "",
+//         validate: n => n.length > 0 && n.length <= 10 ?
+//           true : "Name must be between 1 and 10 characters long",
+//       }
 
 const prettyCategoryNames = {
   aces: "Aces",
@@ -42,7 +85,7 @@ const prettyCategoryNames = {
   chance: "Chance",
 }
 
-module.exports.renderScoreCards = (names, scorecards) => {
+const renderScoreCards = (names, scorecards) => {
   const SP = chalk.gray(" | ")
   const SN = chalk.gray("-+-")
   const CAT_WIDTH = 15
@@ -61,4 +104,8 @@ module.exports.renderScoreCards = (names, scorecards) => {
   console.log(DIVIDER)
   LOWER_SECTION.forEach(printValues)
   console.log(DIVIDER)
+}
+
+module.exports = {
+  mainMenu
 }

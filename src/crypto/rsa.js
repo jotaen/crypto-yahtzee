@@ -25,13 +25,17 @@ const generateKeyPair = () => {
 	})
 }
 
+const toString = keyObject => {
+	return keyObject.export({ type: "pkcs1", format: "pem" })
+}
+
 const keyObjects = (publicKeyString, privateKeyString = null) => {
 	const public = crypto.createPublicKey(publicKeyString)
 	const private = privateKeyString === null ? null : crypto.createPrivateKey(privateKeyString)
 	return {
 		public: public,
 		private: private,
-		finger: hash(public.export({ type: "pkcs1", format: "pem" })),
+		finger: hash(toString(public)),
 	}
 }
 
@@ -41,5 +45,5 @@ const randomBytes = (outputFormat, length = 1) => {
 }
 
 module.exports = {
-	sign, verify, generateKeyPair, keyObjects, randomBytes
+	sign, verify, generateKeyPair, keyObjects, randomBytes, toString
 }
