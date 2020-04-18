@@ -1,5 +1,5 @@
 const { hash, isHash } = require("./hash")
-const { sign, verify } = require("./rsa")
+const { sign, verify, keyObjects } = require("./rsa")
 const { assert, noop } = require("../lib/util")
 
 const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
@@ -12,16 +12,16 @@ const isValidFormat = block =>
 class Blockchain {
 	constructor(ownerKeyPair, otherParticipantsPublicKeys) {
 		this._participants = [ownerKeyPair.public, ...otherParticipantsPublicKeys]
-			.reduce((a, c) => {
-				a[hash(c)] = c
+			.reduce((a, c) => {c
+				const ko = keyObjects(c)
+				a[ko.finger] = ko
 				return a
 			}, {})
-		this._publicKey = ownerKeyPair.public
-		this._privateKey = ownerKeyPair.private
+		this._owner = keyObjects(ownerKeyPair.public, ownerKeyPair.private)
 		this._blockchain = [[Object.freeze({
 			precedingBlock: null,
 			protocolVersion: 0,
-			participants: this._participants,
+			participants: Object.keys(this._participants).sort(),
 		})]]
 	}
 
@@ -33,14 +33,14 @@ class Blockchain {
 		;[
 			["INCOMPATIBLE_BLOCK", () => this.isCompatible(block)],
 			["MALFORMED_BLOCK", () => isValidFormat(block)],
-			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
+			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author].public)],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
 		if (this.head().some(b => hash(b) === hash(block))) {
 			return
 		}
 		// commit won’t be reached if transaction throws:
-		transaction(block.payload, this._participants[block.author])
+		transaction(block.payload, this._participants[block.author].finger)
 		this._commit(block)
 	}
 
@@ -48,11 +48,11 @@ class Blockchain {
 		const block = {
 			precedingBlock: hash(this.head()),
 			state: hash(state),
-			author: this.owner().finger,
+			author: this.ownerFinger(),
 			payload: payload,
 			signature: null,
 		}
-		block.signature = sign(block, this._privateKey)
+		block.signature = sign(block, this._owner.private)
 		this._commit(block)
 	}
 
@@ -60,15 +60,12 @@ class Blockchain {
 		return this._blockchain[this._blockchain.length-1]
 	}
 
-	participants() {
-		return Object.values(this._participants).sort()
+	participantsFinger() {
+		return Object.keys(this._participants).sort()
 	}
 
-	owner() {
-		return {
-			public: this._publicKey,
-			finger: hash(this._publicKey),
-		}
+	ownerFinger() {
+		return this._owner.finger
 	}
 
 	_ancestor() {

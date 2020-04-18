@@ -1,11 +1,11 @@
 const { randomBytes } = require("../crypto/rsa")
-const { hash } = require("../crypto/hash")
+const { keyObjects } = require("../crypto/rsa")
 const { noop } = require("../lib/util")
 
 class Transport {
   constructor(ownerPublicKey, recipientsPublicKeys, retryFn = noop) {
-    this._sender = hash(ownerPublicKey)
-    this._recipients = recipientsPublicKeys.map(k => hash(k))
+    this._sender = keyObjects(ownerPublicKey).finger
+    this._recipients = recipientsPublicKeys.map(k => keyObjects(k).finger)
     this._retryFn = retryFn
     this._processData = noop
     this._send = null

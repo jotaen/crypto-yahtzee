@@ -22,7 +22,7 @@ class Broker {
 			const block = this._buffer.shift()
 			this._games
 				// don’t send blocks back to the issuers themselves:
-				.filter(g => g._blockchain.owner().finger !== block.author)
+				.filter(g => g._blockchain.ownerFinger() !== block.author)
 				.forEach(g => g.receiveBlock(block))
 		})
 	}

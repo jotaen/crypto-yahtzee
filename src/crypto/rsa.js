@@ -6,32 +6,32 @@ const { hash } = require("./hash")
 const ALGORITHM = "sha256"
 const SERIALISATION_BASE = "hex"
 
-const sign = (block, privateKey) => {
+const sign = (block, privateKeyObject) => {
 	const json = safeStringify({ ...block, signature: null })
-	return crypto.sign(ALGORITHM, Buffer.from(json), privateKey).toString(SERIALISATION_BASE)
+	return crypto.sign(ALGORITHM, Buffer.from(json), privateKeyObject).toString(SERIALISATION_BASE)
 }
 
-const verify = (block, publicKey) => {
+const verify = (block, publicKeyObject) => {
 	const signature = block.signature
 	const json = safeStringify({ ...block, signature: null })
-	return crypto.verify(ALGORITHM, Buffer.from(json), publicKey, Buffer.from(signature, SERIALISATION_BASE))
+	return crypto.verify(ALGORITHM, Buffer.from(json), publicKeyObject, Buffer.from(signature, SERIALISATION_BASE))
 }
 
 const generateKeyPair = () => {
-	return util.promisify(crypto.generateKeyPair)('rsa', {
+	return util.promisify(crypto.generateKeyPair)("rsa", {
 		modulusLength: 4096,
 		publicKeyEncoding: { type: "pkcs1", format: "pem" },
 		privateKeyEncoding: { type: "pkcs1", format: "pem" },
 	})
 }
 
-const keyObjects = (publicKeyString, privateKeyString) => {
-	const private = crypto.createPrivateKey(privateKeyString)
+const keyObjects = (publicKeyString, privateKeyString = null) => {
 	const public = crypto.createPublicKey(publicKeyString)
+	const private = privateKeyString === null ? null : crypto.createPrivateKey(privateKeyString)
 	return {
-		private: private,
 		public: public,
-		finger: hash(public.toString()),
+		private: private,
+		finger: hash(public.export({ type: "pkcs1", format: "pem" })),
 	}
 }
 

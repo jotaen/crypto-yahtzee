@@ -12,7 +12,7 @@ class Game {
 			onPopulateBlock: noop,
 			...callbacks,
 		}
-		this._storePointer = StoreMachine(this._blockchain.participants(), this._callbacks.onUpdate)
+		this._storePointer = StoreMachine(this._blockchain.participantsFinger(), this._callbacks.onUpdate)
 		this._yahtzee = null
 		this._diceCup = null
 		this._dices = null
@@ -43,13 +43,13 @@ class Game {
 	}
 
 	_handleTurn(yahtzee) {
-		if (yahtzee.onTurn() !== this._blockchain.owner().public) {
+		if (yahtzee.onTurn() !== this._blockchain.ownerFinger()) {
 			return
 		}
 		const record = category => {
 			this._dispatchOwnAction({
 				type: "RECORD",
-				player: this._blockchain.owner().public,
+				player: this._blockchain.ownerFinger(),
 				category: category,
 			})
 			this._update()
@@ -57,7 +57,7 @@ class Game {
 		const select = !yahtzee.areAttemptsLeft() ? null : dices => {
 			this._dispatchOwnAction({
 				type: "SELECT",
-				player: this._blockchain.owner().public,
+				player: this._blockchain.ownerFinger(),
 				dices: dices,
 			})
 			this._update()
@@ -70,18 +70,18 @@ class Game {
 			this._diceCup = diceCup
 			this._dices = Array.from(Array(diceCup.getState().arity)).map(() => random())
 		}
-		if (diceCup.canSubmitHashes(this._blockchain.owner().public)) {
+		if (diceCup.canSubmitHashes(this._blockchain.ownerFinger())) {
 			this._dispatchOwnAction({
 				type: "DICECUP_HASHES",
-				player: this._blockchain.owner().public,
+				player: this._blockchain.ownerFinger(),
 				seeds: this._dices.map(d => d.seed),
 				hashes: this._dices.map(d => d.hash),
 			})
 		}
-		if (diceCup.canSubmitValues(this._blockchain.owner().public)) {
+		if (diceCup.canSubmitValues(this._blockchain.ownerFinger())) {
 			this._dispatchOwnAction({
 				type: "DICECUP_VALUES",
-				player: this._blockchain.owner().public,
+				player: this._blockchain.ownerFinger(),
 				values: this._dices.map(d => d.value),
 			})
 		}

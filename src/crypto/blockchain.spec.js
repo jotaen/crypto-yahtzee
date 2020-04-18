@@ -9,10 +9,10 @@ describe("[Blockchain] Creation", () => {
 		const b = new Blockchain(ALICE, [BOB.public])
 		assert.deepStrictEqual(b.head(), [{
 			precedingBlock: null,
-			participants: {
-				"a548f70d3a0d3b97b07afce03dcaa7863741bad5e8e2d44ec9419b55a6bce97d0142e25e22184a843f9ba6355ae4423dc952991ce9eb545161e194842a13367a": ALICE.public,
-				"d7a6a8332de4bd112cea966061d76ff0f72b9403f062a2dbce78293bb54768422294e9833a302993516f1aed87ad0ff0c82e705e7fbf1a550d23b43d78db5ad0": BOB.public
-			},
+			participants: [
+				"23e09067fd2b7e2c2799c8f5d4a6536602237c8e5dab31903a7c5b0f59294fccdf20a0075797f686b054fce4dbbac59cf03d49197c635e301838b91dedb301d1",
+				"bce6140d0860706c8cdb78366d732de1e6ffe7fd117de479020ce5e9c91a277d9357f984f9a421b5ad21291d7eb49823a16488a8092e4cebfbb2dccb5baceec0",
+			],
 			protocolVersion: 0,
 		}])
 	})
@@ -22,12 +22,12 @@ describe("[Blockchain] Creation", () => {
 		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
 
 		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
-		
-		assert.strictEqual(aliceBlockchain.owner().public, ALICE.public)
-		assert.strictEqual(bobBlockchain.owner().public, BOB.public)
-		
-		assert.deepStrictEqual(aliceBlockchain.participants(), [ALICE.public, BOB.public])
-		assert.deepStrictEqual(bobBlockchain.participants(), [ALICE.public, BOB.public])
+
+		assert.strictEqual(aliceBlockchain.ownerFinger(), ALICE.finger)
+		assert.strictEqual(bobBlockchain.ownerFinger(), BOB.finger)
+
+		assert.deepStrictEqual(aliceBlockchain.participantsFinger(), [ALICE.finger, BOB.finger])
+		assert.deepStrictEqual(bobBlockchain.participantsFinger(), [ALICE.finger, BOB.finger])
 	})
 })
 
@@ -63,7 +63,7 @@ describe("[Blockchain] Foreign blocks", () => {
 			aliceBlockchain.head()[0],
 			(payload, author) => {
 				assert.deepStrictEqual(payload, payload)
-				assert.strictEqual(author, ALICE.public)
+				assert.strictEqual(author, ALICE.finger)
 			}
 		)
 
