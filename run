@@ -11,7 +11,8 @@ test() {
 }
 
 cli() {
-  node --inspect-brk=0.0.0.0 ./src/client/cli.js ${@}
+  # --inspect-brk=0.0.0.0
+  node ./src/client/cli.js ${@}
 }
 
 server() {
