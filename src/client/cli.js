@@ -6,7 +6,7 @@ const { renderScoreCards, handleTurn, printTable } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
 
-const BROKER_URL = process.env.BROKER || "ws://broker:8080"
+const BROKER_URL = process.env.BROKER || "ws://crypto-yahtzee-broker.herokuapp.com"
 const KEY = {
   dir: "/data/keys/",
   file: "yahtzee",

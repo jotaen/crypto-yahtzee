@@ -6,5 +6,8 @@ RUN mkdir -p /data/keys
 # Set editor for CLI (entering keys)
 ENV EDITOR vi
 
-# TODO copy /app
+COPY ./ /app
 WORKDIR /app
+
+ENTRYPOINT ["node"]
+CMD ["./src/client/cli.js"]
