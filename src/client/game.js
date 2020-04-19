@@ -35,10 +35,12 @@ const prettyDices = {
   6: "6  ••••••",
 }
 
-const renderScoreCards = (yahtzee) => {
+const renderScoreCards = ownerFinger => yahtzee => {
   console.clear()
   const points = yahtzee.scorecards.map(s => sum(s))
-  const names = yahtzee.players.map(p => p.substr(0, 6))
+  const names = yahtzee.players.map(p => {
+    return p === ownerFinger ? " YOU " : p.substr(0, 5)
+  })
   const SP = chalk.gray(" | ")
   const SN = chalk.gray("-+-")
   const CAT_WIDTH = 15

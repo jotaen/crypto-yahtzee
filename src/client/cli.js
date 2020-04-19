@@ -54,7 +54,7 @@ readOrCreateOwnerKeys().then(ownerKeys => {
     )
     establishSocket(transport)
     const game = new Game(ownerKeys, otherPlayersPublicKeys, {
-      onUpdate: renderScoreCards,
+      onUpdate: renderScoreCards(ownerKeys.finger),
       onTurn: handleTurn,
       onPopulateBlock: block => transport.fanOut(block),
     })
