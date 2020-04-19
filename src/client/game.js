@@ -38,7 +38,7 @@ const prettyDices = {
 const renderScoreCards = ownerFinger => yahtzee => {
   console.clear()
   const points = yahtzee.scorecards.map(s => sum(s))
-  const names = yahtzee.players.map(p => {
+  const names = yahtzee.players.map((p, i) => {
     return p === ownerFinger ? " YOU " : p.substr(0, 5)
   })
   const SP = chalk.gray(" | ")
@@ -53,7 +53,9 @@ const renderScoreCards = ownerFinger => yahtzee => {
     console.log(chalk.bold(prettyNames[prop].padStart(CAT_WIDTH, " ")) + SP + values2print + SP)
   }
 
-  console.log(" ".repeat(CAT_WIDTH) + SP + names.join(SP) + SP)
+  console.log(" ".repeat(CAT_WIDTH) + SP + names.map((n, i) => {
+    return yahtzee.onTurn === i ? chalk.bgGreenBright.black(n) : n
+  }).join(SP) + SP)
   console.log(DIVIDER)
   UPPER_SECTION.forEach(printValues(yahtzee.scorecards, prettyCategoryNames))
   console.log(DIVIDER)
@@ -69,8 +71,6 @@ const renderScoreCards = ownerFinger => yahtzee => {
   .forEach(printValues(points, prettyPointNames))
   console.log(DIVIDER)
 }
-
-const printDices = dices => dices.forEach(d => console.log(`${prettyDices[d]}`))
 
 const doRecord = (yahtzee, record) => {
   const potentialScores = count(yahtzee.dices)
@@ -107,9 +107,14 @@ const doSelect = (yahtzee, select) => {
   })
 }
 
+const printTable = yahtzee => {
+  console.log("Current attempt: " + yahtzee.attempt + " of 3")
+  yahtzee.dices.forEach(d => console.log(`${prettyDices[d] || "-"}`))
+}
+
 const handleTurn = (yahtzee, record, select) => {
   console.log("It’s your turn!")
-  printDices(yahtzee.dices)
+  printTable(yahtzee)
   if (select === null) {
     return doRecord(yahtzee, record)
   }
@@ -128,5 +133,5 @@ const handleTurn = (yahtzee, record, select) => {
 }
 
 module.exports = {
-  renderScoreCards, handleTurn
+  renderScoreCards, handleTurn, printTable
 }

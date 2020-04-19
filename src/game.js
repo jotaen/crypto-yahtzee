@@ -9,6 +9,7 @@ class Game {
 		this._callbacks = {
 			onUpdate: noop,
 			onTurn: noop,
+			onViewOthers: noop,
 			onPopulateBlock: noop,
 			...callbacks,
 		}
@@ -48,6 +49,7 @@ class Game {
 
 	_handleTurn(yahtzee) {
 		if (yahtzee.onTurn() !== this._blockchain.ownerFinger()) {
+			this._callbacks.onViewOthers(yahtzee.getState())
 			return
 		}
 		const record = category => {
