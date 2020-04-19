@@ -48,16 +48,18 @@ const renderScoreCards = (yahtzee) => {
   console.log(DIVIDER)
   LOWER_SECTION.forEach(printValues)
   console.log(DIVIDER)
-  if (yahtzee.dices && yahtzee.dices.every(d => d !== null)) {
-    console.log("\nThe dices have been rolled:")
-    yahtzee.dices.forEach(d => console.log(`${prettyDices[d]}`))
-  }
 }
 
+const printDices = dices => dices.forEach(d => console.log(`${prettyDices[d]}`))
+
 const doRecord = (yahtzee, record) => {
+  const potentialScores = count(yahtzee.dices)
   const choices = Object.entries(yahtzee.scorecards[yahtzee.onTurn])
     .filter(e => e[1] === null)
-    .map(e => ({ name: prettyCategoryNames[e[0]], value: e[0]}))
+    .map(e => ({
+      name: `${prettyCategoryNames[e[0]]} (${potentialScores[e[0]]})`,
+      value: e[0],
+    }))
   return inquirer.prompt({
     type: "list",
     name: "category",
@@ -87,7 +89,7 @@ const doSelect = (yahtzee, select) => {
 
 const handleTurn = (yahtzee, record, select) => {
   console.log("It’s your turn!")
-  yahtzee.dices.forEach(d => console.log(`${prettyDices[d]}`))
+  printDices(yahtzee.dices)
   if (select === null) {
     return doRecord(yahtzee, record)
   }
