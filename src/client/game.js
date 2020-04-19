@@ -18,6 +18,14 @@ const prettyCategoryNames = {
   chance: "Chance",
 }
 
+prettyPointNames = {
+  upperPoints: "SUM",
+  bonus: "BONUS",
+  upperTotal: "SECTION",
+  lowerTotal: "SECTION",
+  total: "TOTAL",
+}
+
 const prettyDices = {
   1: "1  •",
   2: "2  ••",
@@ -29,24 +37,34 @@ const prettyDices = {
 
 const renderScoreCards = (yahtzee) => {
   console.clear()
+  const points = yahtzee.scorecards.map(s => sum(s))
   const names = yahtzee.players.map(p => p.substr(0, 6))
   const SP = chalk.gray(" | ")
   const SN = chalk.gray("-+-")
   const CAT_WIDTH = 15
   const DIVIDER = chalk.gray("-".repeat(CAT_WIDTH) + SN + names.map(n => "-".repeat(n.length)).join(SN) + "-+ ")
-  const printValues = cat => {
-    const scores = yahtzee.scorecards
-      .map(s => s[cat])
+  const printValues = (values, prettyNames) => prop => {
+    const values2print = values
+      .map(v => v[prop])
       .map((v, i) => v === null ? " ".repeat(names[i].length) : String(v).padStart(names[i].length, " "))
       .join(SP)
-    console.log(chalk.bold(prettyCategoryNames[cat].padStart(CAT_WIDTH, " ")) + SP + scores + SP)
+    console.log(chalk.bold(prettyNames[prop].padStart(CAT_WIDTH, " ")) + SP + values2print + SP)
   }
+
   console.log(" ".repeat(CAT_WIDTH) + SP + names.join(SP) + SP)
   console.log(DIVIDER)
-
-  UPPER_SECTION.forEach(printValues)
+  UPPER_SECTION.forEach(printValues(yahtzee.scorecards, prettyCategoryNames))
   console.log(DIVIDER)
-  LOWER_SECTION.forEach(printValues)
+  ;["bonus", "upperTotal"]
+    .forEach(printValues(points, prettyPointNames))
+  console.log(DIVIDER)
+  LOWER_SECTION.forEach(printValues(yahtzee.scorecards, prettyCategoryNames))
+  console.log(DIVIDER)
+  ;["lowerTotal"]
+    .forEach(printValues(points, prettyPointNames))
+  console.log(DIVIDER)
+  ;["total"]
+  .forEach(printValues(points, prettyPointNames))
   console.log(DIVIDER)
 }
 
