@@ -14,9 +14,9 @@ const values = rs => rs.map(r => r.value)
 const defaultCallbacks = (broker, state) => ({
 	onPopulateBlock: block => broker.enqueue(block),
 	onUpdate: newState => state.latest = newState,
-	onTurn: (dices, record, select) => {
+	onTurn: (state, record, select) => {
 		if (select) {
-			select([dices[0], null, dices[1], null, dices[3]])
+			select([state.dices[0], null, state.dices[1], null, state.dices[3]])
 		} else {
 			record("yahtzee")
 		}

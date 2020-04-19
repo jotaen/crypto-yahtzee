@@ -1,5 +1,6 @@
+const inquirer = require("inquirer")
 const chalk = require("chalk")
-const { count, sum, UPPER_SECTION, LOWER_SECTION, createScorecard } = require("../yahtzee/scorecard")
+const { count, sum, UPPER_SECTION, LOWER_SECTION } = require("../yahtzee/scorecard")
 
 const prettyCategoryNames = {
   aces: "Aces",
@@ -17,6 +18,15 @@ const prettyCategoryNames = {
   chance: "Chance",
 }
 
+const prettyDices = {
+  1: "1  •",
+  2: "2  ••",
+  3: "3  •••",
+  4: "4  ••••",
+  5: "5  •••••",
+  6: "6  ••••••",
+}
+
 const renderScoreCards = (yahtzee) => {
   console.clear()
   const names = yahtzee.players.map(p => p.substr(0, 6))
@@ -27,7 +37,7 @@ const renderScoreCards = (yahtzee) => {
   const printValues = cat => {
     const scores = yahtzee.scorecards
       .map(s => s[cat])
-      .map((v, i) => v === null ? " ".repeat(names[i].length) : v.padStart(names[i].length, " "))
+      .map((v, i) => v === null ? " ".repeat(names[i].length) : String(v).padStart(names[i].length, " "))
       .join(SP)
     console.log(chalk.bold(prettyCategoryNames[cat].padStart(CAT_WIDTH, " ")) + SP + scores + SP)
   }
@@ -38,8 +48,63 @@ const renderScoreCards = (yahtzee) => {
   console.log(DIVIDER)
   LOWER_SECTION.forEach(printValues)
   console.log(DIVIDER)
+  if (yahtzee.dices && yahtzee.dices.every(d => d !== null)) {
+    console.log("\nThe dices have been rolled:")
+    yahtzee.dices.forEach(d => console.log(`${prettyDices[d]}`))
+  }
+}
+
+const doRecord = (yahtzee, record) => {
+  const choices = Object.entries(yahtzee.scorecards[yahtzee.onTurn])
+    .filter(e => e[1] === null)
+    .map(e => ({ name: prettyCategoryNames[e[0]], value: e[0]}))
+  return inquirer.prompt({
+    type: "list",
+    name: "category",
+    message: "Choose a category to score",
+    choices: choices
+  }).then(answers => {
+    record(answers.category)
+  })
+}
+
+const doSelect = (yahtzee, select) => {
+  const choices = yahtzee.dices.map((d, i) => ({ name: prettyDices[d], value: i }))
+  return inquirer.prompt({
+    type: "checkbox",
+    name: "dicesI",
+    message: "Which dices do you want to roll again?",
+    choices: choices,
+    validate: cs => cs.length > 0 ? true : "Please select one or more dices",
+  }).then(answers => {
+    const dices = yahtzee.dices.slice()
+    answers.dicesI.forEach(i => {
+      dices[i] = null
+    })
+    select(dices)
+  })
+}
+
+const handleTurn = (yahtzee, record, select) => {
+  console.log("It’s your turn!")
+  yahtzee.dices.forEach(d => console.log(`${prettyDices[d]}`))
+  if (select === null) {
+    return doRecord(yahtzee, record)
+  }
+  return inquirer.prompt({
+    type: "list",
+    name: "action",
+    message: "What do you want to do?",
+    choices: [
+      { name: "Select dices you want to roll again", value: "SELECT" },
+      { name: "Record score", value: "RECORD" },
+    ]
+  }).then(answers => {
+    return answers.action === "SELECT" ?
+      doSelect(yahtzee, select) : doRecord(yahtzee, record)
+  })
 }
 
 module.exports = {
-  renderScoreCards
+  renderScoreCards, handleTurn
 }

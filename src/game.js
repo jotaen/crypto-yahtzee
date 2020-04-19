@@ -38,8 +38,12 @@ class Game {
 		const handler = [
 			[DiceCup, "_handleDicing"],
 			[Yahtzee, "_handleTurn"],
-		].find(([T]) => currentStore instanceof T)[1]
-		this[handler]((currentStore))
+		].find(([T]) => currentStore instanceof T)
+		if (handler) {
+			this[handler[1]]((currentStore))
+		} else {
+			process.exit(0)
+		}
 	}
 
 	_handleTurn(yahtzee) {
@@ -62,7 +66,7 @@ class Game {
 			})
 			this._update()
 		}
-		this._callbacks.onTurn(yahtzee.getState().dices, record, select)
+		this._callbacks.onTurn(yahtzee.getState(), record, select)
 	}
 
 	_handleDicing(diceCup) {

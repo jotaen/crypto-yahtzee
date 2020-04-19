@@ -2,7 +2,7 @@ const WebSocket = require("ws")
 const { Transport } = require("./transport")
 const { Game } = require("../game")
 const { mainMenu } = require("./menu")
-const { renderScoreCards } = require("./game")
+const { renderScoreCards, handleTurn } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
 
@@ -55,7 +55,7 @@ readOrCreateOwnerKeys().then(ownerKeys => {
     establishSocket(transport)
     const game = new Game(ownerKeys, otherPlayersPublicKeys, {
       onUpdate: renderScoreCards,
-      onTurn: () => { }, // TODO wire to CLI
+      onTurn: handleTurn,
       onPopulateBlock: block => transport.fanOut(block),
     })
     transport.onReceiveMessage(block => game.receiveBlock(block))
