@@ -1,6 +1,7 @@
 const assert = require("assert")
 const { noop } = require("../lib/util")
 const { isHexString } = require("../crypto/hash")
+const { toKeyO } = require("../crypto/rsa")
 const { Transport } = require("./transport")
 const { ALICE, BOB, CHRIS } = require("../lib/rsa-testdata.json")
 
@@ -9,7 +10,7 @@ class FakeSocket {
     this.sent = []
     this._onmessage = noop
   }
-  onmessage(fn) { this._onmessage = fn }
+  on(_, fn) { this._onmessage = fn }
   emit(jsonData) { this._onmessage({ data: JSON.stringify(jsonData)}) }
   send(stringifiedMessage) { this.sent.push(JSON.parse(stringifiedMessage)) }
 }
@@ -28,7 +29,7 @@ describe("[Transport] Receiving messages", () => {
   it("passes incoming data to processor", () => {
     const processor = new FakeProcessor()
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     t.onReceiveMessage(processor.return(true))
 
@@ -39,7 +40,7 @@ describe("[Transport] Receiving messages", () => {
   it("acknowledges incoming messages via their uuid", () => {
     const processor = new FakeProcessor()
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     t.onReceiveMessage(processor.return(true))
     const uuid = "172y8ughasf"
@@ -54,7 +55,7 @@ describe("[Transport] Receiving messages", () => {
   it("doesn’t pass on duplicate messages multiple times (determined by uuid)", () => {
     const processor = new FakeProcessor()
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     t.onReceiveMessage(processor.return(true))
     const uuid = "oa7sdyfu12"
@@ -69,7 +70,7 @@ describe("[Transport] Receiving messages", () => {
   it("acknowledges messages even if processor doesn’t accept them", () => {
     const processor = new FakeProcessor()
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     t.onReceiveMessage(processor.return(false))
 
@@ -81,7 +82,7 @@ describe("[Transport] Receiving messages", () => {
   it("stores unprocessable messages so that they can be retried later", () => {
     const processor = new FakeProcessor()
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     t.onReceiveMessage(processor.return(false))
 
@@ -101,7 +102,7 @@ describe("[Transport] Receiving messages", () => {
 describe("[Transport] Sending messages", () => {
   it("sends out data", () => {
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
     t.wireUp(socket)
     const data = { foo: 123 }
 
@@ -136,7 +137,7 @@ describe("[Transport] Sending messages", () => {
       fn()
     }
 
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public], retryFn)
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)], retryFn)
     t.wireUp(socket)
 
     t.fanOut({ foo: 6 })
@@ -145,7 +146,7 @@ describe("[Transport] Sending messages", () => {
 
   it("suspends sending while disconnected, but buffers and resumes afterwards", () => {
     const socket = new FakeSocket()
-    const t = new Transport(ALICE.public, [BOB.public, CHRIS.public])
+    const t = new Transport(toKeyO(ALICE.public), [toKeyO(BOB.public), toKeyO(CHRIS.public)])
 
     t.fanOut({ foo: 123 })
     t.fanOut({ foo: true })

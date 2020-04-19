@@ -38,7 +38,7 @@ const setupGame = () => {
         default: false,
       }
       if (key) {
-        otherPlayersPublicKeys.push(key)
+        otherPlayersPublicKeys.push(rsa.toKeyO(key))
       }
       return inquirer.prompt(next)
     }).then(answers => {
@@ -59,6 +59,11 @@ const displayKey = ownerKeys => {
   })
 }
 
+const waiting = () => {
+  renderMainBanner()
+  console.log(chalk.bold("Starting the game, hang tight..."))
+}
+
 const mainMenu = ownerKeys => {
   renderMainBanner()
   return inquirer.prompt({
@@ -73,8 +78,9 @@ const mainMenu = ownerKeys => {
     }).then(answers => {
       if (answers.action === "SETUP") {
         return setupGame()
-          .then(keys => {
-            return keys.length === 0 ? mainMenu(ownerKeys) : keys
+          .then(otherPlayerPublicKeys => {
+            return otherPlayerPublicKeys.length === 0 ? 
+              mainMenu(ownerKeys) : otherPlayerPublicKeys
           })
       } else if (answers.action === "DISPLAY_KEY") {
         return displayKey(ownerKeys)
@@ -87,5 +93,5 @@ const mainMenu = ownerKeys => {
 }
 
 module.exports = {
-  mainMenu
+  mainMenu, waiting
 }

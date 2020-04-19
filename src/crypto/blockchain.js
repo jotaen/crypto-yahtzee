@@ -1,5 +1,5 @@
 const { hash, isHash } = require("./hash")
-const { sign, verify, keyObjects } = require("./rsa")
+const { sign, verify, toKeyO } = require("./rsa")
 const { assert, noop } = require("../lib/util")
 
 const BLOCK_PROPERTIES = ["precedingBlock", "author", "state", "signature", "payload"]
@@ -10,14 +10,13 @@ const isValidFormat = block =>
 	&& isHash(block.author)
 
 class Blockchain {
-	constructor(ownerKeyPair, otherParticipantsPublicKeys) {
-		this._participants = [ownerKeyPair.public, ...otherParticipantsPublicKeys]
-			.reduce((a, c) => {c
-				const ko = keyObjects(c)
-				a[ko.finger] = ko
+	constructor(ownerKeyO, otherParticipantsKeyO) {
+		this._owner = ownerKeyO
+		this._participants = [this._owner, ...otherParticipantsKeyO]
+			.reduce((a, c) => {
+				a[c.finger] = c.public
 				return a
 			}, {})
-		this._owner = keyObjects(ownerKeyPair.public, ownerKeyPair.private)
 		this._blockchain = [[Object.freeze({
 			precedingBlock: null,
 			protocolVersion: 0,
@@ -33,14 +32,14 @@ class Blockchain {
 		;[
 			["INCOMPATIBLE_BLOCK", () => this.isCompatible(block)],
 			["MALFORMED_BLOCK", () => isValidFormat(block)],
-			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author].public)],
+			["INVALID_SIGNATURE", () => verify(block, this._participants[block.author])],
 			["INCOMPATIBLE_STATE", () => hash(state) === block.state],
 		].forEach(assert)
 		if (this.head().some(b => hash(b) === hash(block))) {
 			return
 		}
 		// commit won’t be reached if transaction throws:
-		transaction(block.payload, this._participants[block.author].finger)
+		transaction(block.payload, block.author)
 		this._commit(block)
 	}
 

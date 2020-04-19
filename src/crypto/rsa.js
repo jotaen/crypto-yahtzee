@@ -29,7 +29,7 @@ const toString = keyObject => {
 	return keyObject.export({ type: "pkcs1", format: "pem" })
 }
 
-const keyObjects = (publicKeyString, privateKeyString = null) => {
+const toKeyO = (publicKeyString, privateKeyString = null) => {
 	const public = crypto.createPublicKey(publicKeyString)
 	const private = privateKeyString === null ? null : crypto.createPrivateKey(privateKeyString)
 	return {
@@ -54,5 +54,5 @@ const randomBytes = (outputFormat, length = 1) => {
 }
 
 module.exports = {
-	sign, verify, generateKeyPair, keyObjects, randomBytes, toString, isPublicKey
+	sign, verify, generateKeyPair, toKeyO, randomBytes, toString, isPublicKey
 }

@@ -4,8 +4,8 @@ const { Yahtzee } = require("./yahtzee/yahtzee")
 const { sortBy, noop } = require("./lib/util")
 
 class Game {
-	constructor(ownerKeyPair, otherPlayersPublicKeys, callbacks) {
-		this._blockchain = new Blockchain(ownerKeyPair, otherPlayersPublicKeys)
+	constructor(ownerKeyO, otherPlayersKeyO, callbacks) {
+		this._blockchain = new Blockchain(ownerKeyO, otherPlayersKeyO)
 		this._callbacks = {
 			onUpdate: noop,
 			onTurn: noop,

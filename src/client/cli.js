@@ -2,12 +2,24 @@ const WebSocket = require("ws")
 const { Transport } = require("./transport")
 const { Game } = require("../game")
 const { mainMenu } = require("./menu")
-const { generateKeyPair, keyObjects } = require("../crypto/rsa")
+const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
 
+const BROKER_URL = process.env.BROKER || "ws://broker:8080"
 const KEY = {
-  dir: "/data/keys",
+  dir: "/data/keys/",
   file: "yahtzee",
+}
+
+const establishSocket = transport => {
+  const websocket = new WebSocket(BROKER_URL + "?id=" + transport.sender())
+  websocket.on("open", () => {
+    transport.wireUp(websocket)
+  })
+  websocket.on("close", () => {
+    transport.wireUp(null)
+    establishSocket()
+  })
 }
 
 const readOrCreateOwnerKeys = () => fileSystem.stat(KEY.dir + KEY.file)
@@ -20,21 +32,16 @@ const readOrCreateOwnerKeys = () => fileSystem.stat(KEY.dir + KEY.file)
     fileSystem.readFile(KEY.dir + KEY.file + ".pub"),
     fileSystem.readFile(KEY.dir + KEY.file),
   ]))
-  .then(keys => keyObjects(keys[0].toString(), keys[1].toString()))
+  .then(keys => toKeyO(keys[0].toString(), keys[1].toString()))
 
 readOrCreateOwnerKeys().then(ownerKeys => {
   return mainMenu(ownerKeys).then(otherPlayersPublicKeys => {
     const transport = new Transport(
-      ownerKeys.public,
+      ownerKeys,
       otherPlayersPublicKeys,
       fn => setTimeout(fn, 200)
     )
-    const websocket = new WebSocket("ws://localhost:8080")
-    transport.wireUp(websocket)
-    websocket.onclose(() => {
-      transport.wireUp(null)
-      connectWebsocket()
-    })
+    establishSocket(transport)
     const game = new Game(ownerKeys, otherPlayersPublicKeys, {
       onUpdate: () => { }, // TODO wire to CLI
       onTurn: () => { }, // TODO wire to CLI

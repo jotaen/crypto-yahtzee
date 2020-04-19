@@ -1,12 +1,12 @@
 const assert = require("assert")
 const { Blockchain } = require("./blockchain")
-const rsa = require("./rsa")
+const { verify, toKeyO } = require("./rsa")
 
 const { ALICE, BOB, CHRIS } = require("../lib/rsa-testdata.json")
 
 describe("[Blockchain] Creation", () => {
 	it("stores basic info in initial block", () => {
-		const b = new Blockchain(ALICE, [BOB.public])
+		const b = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
 		assert.deepStrictEqual(b.head(), [{
 			precedingBlock: null,
 			participants: [
@@ -18,8 +18,8 @@ describe("[Blockchain] Creation", () => {
 	})
 
 	it("can replicate existing blockchain", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		assert.deepStrictEqual(aliceBlockchain.head(), bobBlockchain.head())
 
@@ -33,7 +33,7 @@ describe("[Blockchain] Creation", () => {
 
 describe("[Blockchain] Block creation", () => {
 	it("creates own block as new head of chain", () => {
-		const b = new Blockchain(ALICE, [BOB.public])
+		const b = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
 		const payload1 = { action: "FOO" }
 		b.commitOwnBlock({ state: "BAR" }, payload1)
 		assert.deepStrictEqual(b.head()[0].payload, payload1)
@@ -44,17 +44,17 @@ describe("[Blockchain] Block creation", () => {
 	})
 
 	it("signs own block correctly", () => {
-		const b = new Blockchain(ALICE, [BOB.public])
+		const b = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
 		b.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
-		assert.strictEqual(rsa.verify(b.head()[0], ALICE.public), true)
-		assert.strictEqual(rsa.verify(b.head()[0], BOB.public), false)
+		assert.strictEqual(verify(b.head()[0], ALICE.public), true)
+		assert.strictEqual(verify(b.head()[0], BOB.public), false)
 	})
 })
 
 describe("[Blockchain] Foreign blocks", () => {
 	it("accepts foreign blocks as new head", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 		const payload = { foo: 2 }
 
 		aliceBlockchain.commitOwnBlock({ someState: 3126 }, payload)
@@ -72,8 +72,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("accepts foreign blocks as siblings in current head", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		aliceBlockchain.commitOwnBlock(null, { name: "alice" })
 		bobBlockchain.commitOwnBlock(null, { name: "bobby" })
@@ -89,8 +89,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("rejects foreign blocks if transaction fails", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		aliceBlockchain.commitOwnBlock({ someState: 3126 }, { foo: 2 })
 
@@ -109,8 +109,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("rejects foreign blocks from alien blockchain", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [CHRIS.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(CHRIS.public)])
 
 		aliceBlockchain.commitOwnBlock({}, { foo: 2 })
 
@@ -121,9 +121,9 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("rejects foreign blocks with invalid signature", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
-		const chrisBlockchain = new Blockchain(CHRIS, [BOB.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
+		const chrisBlockchain = new Blockchain(toKeyO(CHRIS.public, CHRIS.private), [toKeyO(BOB.public)])
 
 		bobBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 		chrisBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
@@ -140,8 +140,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("rejects foreign blocks that contain unknown properties", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		bobBlockchain.commitOwnBlock({ state: "BAR" }, { action: "FOO" })
 
@@ -158,8 +158,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("rejects foreign blocks that are based off an incompatible state", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		bobBlockchain.commitOwnBlock({ someState: 2 }, { action: "FOO" })
 
@@ -170,8 +170,8 @@ describe("[Blockchain] Foreign blocks", () => {
 	})
 
 	it("ignores duplicates", () => {
-		const aliceBlockchain = new Blockchain(ALICE, [BOB.public])
-		const bobBlockchain = new Blockchain(BOB, [ALICE.public])
+		const aliceBlockchain = new Blockchain(toKeyO(ALICE.public, ALICE.private), [toKeyO(BOB.public)])
+		const bobBlockchain = new Blockchain(toKeyO(BOB.public, BOB.private), [toKeyO(ALICE.public)])
 
 		bobBlockchain.commitOwnBlock(null, { action: "FOO" })
 		aliceBlockchain.commitForeignBlock(null, bobBlockchain.head()[0])

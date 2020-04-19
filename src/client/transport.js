@@ -1,11 +1,10 @@
 const { randomBytes } = require("../crypto/rsa")
-const { keyObjects } = require("../crypto/rsa")
 const { noop } = require("../lib/util")
 
 class Transport {
-  constructor(ownerPublicKey, recipientsPublicKeys, retryFn = noop) {
-    this._sender = keyObjects(ownerPublicKey).finger
-    this._recipients = recipientsPublicKeys.map(k => keyObjects(k).finger)
+  constructor(ownerKeyO, otherParticipantsKeyO, retryFn = noop) {
+    this._sender = ownerKeyO.finger
+    this._recipients = otherParticipantsKeyO.map(k => k.finger)
     this._retryFn = retryFn
     this._processData = noop
     this._send = null
@@ -36,7 +35,7 @@ class Transport {
 
   wireUp(websocket) {
     if (websocket) {
-      websocket.onmessage(messageEvent => this._handleIncoming(JSON.parse(messageEvent.data)))
+      websocket.on("message", messageEvent => this._handleIncoming(JSON.parse(messageEvent.data)))
       this._send = data => websocket.send(JSON.stringify(data))
       this._flushOutgoingBuffer()
     } else {
