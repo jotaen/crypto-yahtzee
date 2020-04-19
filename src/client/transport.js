@@ -15,11 +15,14 @@ class Transport {
     this._outgoingBuffer = new Map() // uuid:message
   }
 
+  sender() {
+    return this._sender
+  }
+
   fanOut(data) {
     this._recipients.forEach(r => {
       this._deliverOutgoing({
         type: "data",
-        sender: this._sender,
         recipient: r,
         uuid: randomBytes("hex", 16),
         data: data,

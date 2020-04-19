@@ -108,18 +108,18 @@ describe("[Transport] Sending messages", () => {
     t.fanOut(data)
 
     assert.deepStrictEqual(socket.sent[0].type, "data")
-    assert.deepStrictEqual(socket.sent[0].sender, ALICE.finger)
     assert.deepStrictEqual(socket.sent[0].recipient, BOB.finger)
     assert.deepStrictEqual(socket.sent[0].data, data)
     assert.strictEqual(isHexString(32)(socket.sent[0].uuid), true)
     
     assert.deepStrictEqual(socket.sent[1].type, "data")
-    assert.deepStrictEqual(socket.sent[1].sender, ALICE.finger)
     assert.deepStrictEqual(socket.sent[1].recipient, CHRIS.finger)
     assert.deepStrictEqual(socket.sent[1].data, data)
     assert.strictEqual(isHexString(32)(socket.sent[1].uuid), true)
 
     assert.notStrictEqual(socket.sent[0].uuid, socket.sent[1].uuid)
+
+    assert.strictEqual(t.sender(), ALICE.finger)
   })
 
   it("retries sending messages when they don’t get acknowledged", () => {

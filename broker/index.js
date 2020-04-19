@@ -1,31 +1,41 @@
 const WebSocket = require("ws")
+const url = require("url")
+const querystring = require("querystring")
 
 const PORT = process.env.PORT || 8080
-
 const server = new WebSocket.Server({ port: PORT })
-
 const clients = new Map()
 
 console.log(`Broker listening on ${PORT}`)
 
 server.on("connection", (client, request) => {
-  const publicKey = request.searchParams.get("publicKey")
-  clients.set(publicKey, client)
+  const clientId = querystring.parse(url.parse(request.url).query).id
+  if (!clientId || String(clientId).length < 128 || clients.has(clientId)) {
+    console.log(`Connection attempt failed from '${clientId}'`)
+    client.close()
+    return
+  }
+  clients.set(clientId, client)
+  console.log(`Connected ${clientId}`)
 
-  console.log(`Connected ${publicKey}`)
-
-  client.onmessage(data => {
-    const message = JSON.parse(data)
-    const recipient = clients.get(message.recipient)
-    if (!recipient || !recipient.readyState === WebSocket.OPEN) {
-      return
+  client.on("message", data => {
+    try {
+      const message = JSON.parse(data)
+      const recipientId = message.recipient
+      const recipient = clients.get(recipientId)
+      if (!recipient || !recipient.readyState === WebSocket.OPEN) {
+        console.log(`Cannot dispatch to '${recipientId}'`)
+        return
+      }
+      console.log(`Dispatch message '${clientId}' > '${recipientId}'`)
+      recipient.send(JSON.stringify(message.data))
+    } catch(e) {
+      console.log(`Error dispatching message from '${clientId}'`, e.message)
     }
-    console.log(`Received message ${sender} > ${recipient}`)
-    recipient.send(JSON.stringify(message.data))
   })
 
-  client.onclose(() => {
-    clients.delete(publicKey)
-    console.log(`Disconnected ${publicKey}`)
+  client.on("close", () => {
+    clients.delete(clientId)
+    console.log(`Disconnected '${clientId}'`)
   })
 })
