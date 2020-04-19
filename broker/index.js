@@ -18,17 +18,16 @@ server.on("connection", (client, request) => {
   clients.set(clientId, client)
   console.log(`Connected ${clientId}`)
 
-  client.on("message", data => {
+  client.on("message", messageTxt => {
     try {
-      const message = JSON.parse(data)
-      const recipientId = message.recipient
+      const recipientId = JSON.parse(messageTxt).recipient
       const recipient = clients.get(recipientId)
       if (!recipient || !recipient.readyState === WebSocket.OPEN) {
         console.log(`Cannot dispatch to '${recipientId}'`)
         return
       }
       console.log(`Dispatch message '${clientId}' > '${recipientId}'`)
-      recipient.send(JSON.stringify(message.data))
+      recipient.send(messageTxt)
     } catch(e) {
       console.log(`Error dispatching message from '${clientId}'`, e.message)
     }

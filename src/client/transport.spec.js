@@ -11,7 +11,7 @@ class FakeSocket {
     this._onmessage = noop
   }
   on(_, fn) { this._onmessage = fn }
-  emit(jsonData) { this._onmessage({ data: JSON.stringify(jsonData)}) }
+  emit(jsonData) { this._onmessage(JSON.stringify(jsonData)) }
   send(stringifiedMessage) { this.sent.push(JSON.parse(stringifiedMessage)) }
 }
 

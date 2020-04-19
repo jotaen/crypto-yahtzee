@@ -2,6 +2,7 @@ const WebSocket = require("ws")
 const { Transport } = require("./transport")
 const { Game } = require("../game")
 const { mainMenu } = require("./menu")
+const { renderScoreCards } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
 
@@ -12,14 +13,24 @@ const KEY = {
 }
 
 const establishSocket = transport => {
-  const websocket = new WebSocket(BROKER_URL + "?id=" + transport.sender())
-  websocket.on("open", () => {
-    transport.wireUp(websocket)
-  })
-  websocket.on("close", () => {
-    transport.wireUp(null)
-    establishSocket()
-  })
+  try {
+    const websocket = new WebSocket(BROKER_URL + "?id=" + transport.sender())
+    websocket.on("open", () => {
+      transport.wireUp(websocket)
+    })
+    websocket.on("close", () => {
+      transport.wireUp(null)
+      establishSocket(transport)
+    })
+    websocket.on("error", error => {
+      if (error.code === "ECONNREFUSED") {
+        websocket.close()
+      }
+    })
+  } catch(e) {
+    console.error(e)
+    establishSocket(transport)
+  }
 }
 
 const readOrCreateOwnerKeys = () => fileSystem.stat(KEY.dir + KEY.file)
@@ -43,7 +54,7 @@ readOrCreateOwnerKeys().then(ownerKeys => {
     )
     establishSocket(transport)
     const game = new Game(ownerKeys, otherPlayersPublicKeys, {
-      onUpdate: () => { }, // TODO wire to CLI
+      onUpdate: renderScoreCards,
       onTurn: () => { }, // TODO wire to CLI
       onPopulateBlock: block => transport.fanOut(block),
     })

@@ -1,3 +1,4 @@
+const chalk = require("chalk")
 const { count, sum, UPPER_SECTION, LOWER_SECTION, createScorecard } = require("../yahtzee/scorecard")
 
 const prettyCategoryNames = {
@@ -16,13 +17,15 @@ const prettyCategoryNames = {
   chance: "Chance",
 }
 
-const renderScoreCards = (names, scorecards) => {
+const renderScoreCards = (yahtzee) => {
+  console.clear()
+  const names = yahtzee.players.map(p => p.substr(0, 6))
   const SP = chalk.gray(" | ")
   const SN = chalk.gray("-+-")
   const CAT_WIDTH = 15
   const DIVIDER = chalk.gray("-".repeat(CAT_WIDTH) + SN + names.map(n => "-".repeat(n.length)).join(SN) + "-+ ")
   const printValues = cat => {
-    const scores = scorecards
+    const scores = yahtzee.scorecards
       .map(s => s[cat])
       .map((v, i) => v === null ? " ".repeat(names[i].length) : v.padStart(names[i].length, " "))
       .join(SP)
@@ -38,5 +41,5 @@ const renderScoreCards = (names, scorecards) => {
 }
 
 module.exports = {
-
+  renderScoreCards
 }

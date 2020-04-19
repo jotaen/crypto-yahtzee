@@ -12,6 +12,7 @@ class Transport {
     this._processed = new Set() // uuids
     this._incomingBuffer = new Map() // uuid:message
     this._outgoingBuffer = new Map() // uuid:message
+    this._handleIncoming = this._handleIncoming.bind(this)
   }
 
   sender() {
@@ -35,8 +36,17 @@ class Transport {
 
   wireUp(websocket) {
     if (websocket) {
-      websocket.on("message", messageEvent => this._handleIncoming(JSON.parse(messageEvent.data)))
-      this._send = data => websocket.send(JSON.stringify(data))
+      websocket.on("message", messageTxt => {
+        try {
+          const message = JSON.parse(messageTxt)
+          this._handleIncoming(message)
+        }
+        catch (e) { console.error("Websocket error (receiving):", e) }
+      })
+      this._send = message => {
+        try { websocket.send(JSON.stringify(message)) }
+        catch (e) { console.error("Websocket error (sending):", e) }
+      }
       this._flushOutgoingBuffer()
     } else {
       this._send = null
@@ -47,7 +57,7 @@ class Transport {
     if (message.type === "ack") {
       this._acknowledged.add(message.uuid)
     } else if (message.type === "data") {
-      this._send({ type: "ack", uuid: message.uuid })
+      this._send({ type: "ack", recipient: message.data.author, uuid: message.uuid })
       if (this._processed.has(message.uuid)) {
         return
       }
