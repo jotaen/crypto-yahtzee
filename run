@@ -15,8 +15,4 @@ cli() {
   node ./src/client/cli.js ${@}
 }
 
-broker() {
-  node ./broker/index.js ${@}
-}
-
 $1 ${@:2}
