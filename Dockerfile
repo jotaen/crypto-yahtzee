@@ -6,8 +6,10 @@ RUN mkdir -p /data/keys
 # Set editor for CLI (entering keys)
 ENV EDITOR vi
 
-COPY ./ /app
 WORKDIR /app
 
-ENTRYPOINT ["node"]
-CMD ["./src/client/cli.js"]
+COPY . ./
+RUN npm i
+
+ENTRYPOINT ["./run"]
+CMD ["cli"]
