@@ -108,12 +108,14 @@ const doSelect = (yahtzee, select) => {
 }
 
 const printTable = yahtzee => {
-  console.log("Current attempt: " + yahtzee.attempt + " of 3")
+  console.log("Attempt: " + yahtzee.attempt + " of 3")
+  console.log("Dices:")
   yahtzee.dices.forEach(d => console.log(`${prettyDices[d] || "-"}`))
+  console.log("")
 }
 
 const handleTurn = (yahtzee, record, select) => {
-  console.log("It’s your turn!")
+  console.log(chalk.bgGreenBright.black("It’s your turn!"))
   printTable(yahtzee)
   if (select === null) {
     return doRecord(yahtzee, record)
@@ -132,6 +134,10 @@ const handleTurn = (yahtzee, record, select) => {
   })
 }
 
+const printGoodBye = () => {
+  console.log("Game finished!")
+}
+
 module.exports = {
-  renderScoreCards, handleTurn, printTable
+  renderScoreCards, handleTurn, printTable, printGoodBye
 }

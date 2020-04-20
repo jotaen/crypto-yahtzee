@@ -11,6 +11,7 @@ class Game {
 			onTurn: noop,
 			onViewOthers: noop,
 			onPopulateBlock: noop,
+			onGameEnd: noop,
 			...callbacks,
 		}
 		this._storePointer = StoreMachine(this._blockchain.participantsFinger(), this._callbacks.onUpdate)
@@ -43,6 +44,7 @@ class Game {
 		if (handler) {
 			this[handler[1]]((currentStore))
 		} else {
+			this._callbacks.onGameEnd()
 			process.exit(0)
 		}
 	}
