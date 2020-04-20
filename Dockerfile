@@ -1,4 +1,4 @@
-FROM node:12.14-alpine
+FROM node:12.16.2-alpine
 
 # Install bash for `run` script
 RUN apk add --update bash && rm -rf /var/cache/apk/*
