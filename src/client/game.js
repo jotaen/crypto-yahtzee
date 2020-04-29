@@ -70,7 +70,7 @@ const renderScoreCards = playerNamesByFinger => yahtzee => {
   console.log(DIVIDER)
 }
 
-const doRecord = (yahtzee) => {
+const askRecord = record => yahtzee => {
   const potentialScores = count(yahtzee.dices)
   const choices = Object.entries(yahtzee.scorecards[yahtzee.onTurn])
     .filter(e => e[1] === null)
@@ -83,12 +83,10 @@ const doRecord = (yahtzee) => {
     name: "category",
     message: "Choose a category to score",
     choices: choices
-  }).then(answers => {
-    return { type: "RECORD", value: answers.category }
-  })
+  }).then(({ category }) => () => record(category))
 }
 
-const doSelect = (yahtzee) => {
+const askSelect = select => yahtzee => {
   const choices = yahtzee.dices.map((d, i) => ({ name: prettyDices[d], value: i }))
   return inquirer.prompt({
     type: "checkbox",
@@ -101,7 +99,7 @@ const doSelect = (yahtzee) => {
     answers.dicesI.forEach(i => {
       dices[i] = null
     })
-    return { type: "SELECT", value: dices }
+    return () => select(dices)
   })
 }
 
@@ -116,34 +114,32 @@ const printTable = (playerNamesByFinger, isHighlighted) => yahtzee => {
 
 const handleTurn = playerNamesByFinger => (yahtzee, record, select) => {
   printTable(playerNamesByFinger, true)(yahtzee)
-  if (select === null) {
-    return doRecord(yahtzee, record)
-  }
+
   const chooseAction = () => inquirer.prompt({
     type: "list",
-    name: "action",
+    name: "askFn",
     message: "What do you want to do?",
     choices: [
-      { name: "Select dice you want to roll again", value: "SELECT" },
-      { name: "Record score", value: "RECORD" },
+      { name: "Select dice you want to roll again", value: askSelect(select) },
+      { name: "Record score", value: askRecord(record) },
     ]
-  }).then(answers => {
-    const doAction = answers.action === "SELECT" ? doSelect : doRecord
-    return doAction(yahtzee).then(action => {
-      return inquirer.prompt({
-        type: "confirm",
-        name: "sure",
-        message: "Sure?",
-        default: true,
-      }).then(answers => {
-        return answers.sure ? action : chooseAction()
-      })
-    })
-  })
+  }).then(({ askFn }) => askFn)
 
-  return chooseAction().then(action => {
-    action.type === "SELECT" ? select(action.value) : record(action.value)
-  })
+  const ask = () => {
+    const initalAskFn = select === null ? () => Promise.resolve(askRecord(record)) : chooseAction
+    return initalAskFn()
+      .then(askFn => askFn(yahtzee))
+      .then(actionFn => inquirer.prompt({
+          type: "confirm",
+          name: "sure",
+          message: "Sure?",
+          default: true,
+        }).then(answers => {
+          return answers.sure ? actionFn : ask()
+        }))
+  }
+
+  return ask().then(actionFn => actionFn())
 }
 
 module.exports = {
