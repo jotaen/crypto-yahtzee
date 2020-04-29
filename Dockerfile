@@ -8,6 +8,7 @@ ENV EDITOR vi
 
 # Folder for user’s keys
 RUN mkdir -p /data/keys
+RUN mkdir -p /data/players
 
 # Configure environment
 WORKDIR /app

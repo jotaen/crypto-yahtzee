@@ -14,7 +14,9 @@ This will pull the latest version as docker container and start the game right a
 
 ### Options:
 
-- `-v /your/computer/keys:/data/keys`: You can provide your own RSA key pair by mounting a volume to `/data/keys` containing the public and private RSA key files (named `yahtzee` and `yahtzee.pub`). If not specified, the game will automatically generate an RSA key pair for you on startup.
+- `-v ~/some-folder:/data`: You can preserve data like keys in order to reuse them. The `/data` folder contains the following subfolders:
+  - `/keys`: Your own RSA key pair are located here (named `yahtzee` and `yahtzee.pub`). If no keys are provided, the game autogenerates them and stores them here.
+  - `/players`: All registered players’ public keys are stored here.
 - `-e "BROKER=ws://your-own-broker.com"`: You can set a custom websocket URL as environment variable (`BROKER`) for connection to your own broker. If not specified, the game will automatically connect to a message broker that I host.
 
 ## Broker

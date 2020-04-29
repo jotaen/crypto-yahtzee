@@ -5,12 +5,7 @@ const { mainMenu } = require("./menu")
 const { renderScoreCards, handleTurn, printTable, printGoodBye } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
-
-const BROKER_URL = process.env.BROKER || "ws://crypto-yahtzee-broker.herokuapp.com"
-const KEY = {
-  dir: "/data/keys/",
-  file: "yahtzee",
-}
+const { BROKER_URL, OWNER_KEY_PATH } = require("./config")
 
 const establishSocket = transport => {
   try {
@@ -33,15 +28,15 @@ const establishSocket = transport => {
   }
 }
 
-const readOrCreateOwnerKeys = () => fileSystem.stat(KEY.dir + KEY.file)
+const readOrCreateOwnerKeys = () => fileSystem.stat(OWNER_KEY_PATH)
   .catch(() => generateKeyPair()
     .then(keys => Promise.all([
-      fileSystem.writeFile(KEY.dir + KEY.file + ".pub", keys.publicKey),
-      fileSystem.writeFile(KEY.dir + KEY.file, keys.privateKey),
+      fileSystem.writeFile(OWNER_KEY_PATH + ".pub", keys.publicKey),
+      fileSystem.writeFile(OWNER_KEY_PATH, keys.privateKey),
     ])))
   .then(() => Promise.all([
-    fileSystem.readFile(KEY.dir + KEY.file + ".pub"),
-    fileSystem.readFile(KEY.dir + KEY.file),
+    fileSystem.readFile(OWNER_KEY_PATH + ".pub"),
+    fileSystem.readFile(OWNER_KEY_PATH),
   ]))
   .then(keys => toKeyO(keys[0].toString(), keys[1].toString()))
 

@@ -1,7 +1,0 @@
-# TODO
-
-## Yahtzee
-
-## Crypto
-
-## App
