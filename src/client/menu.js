@@ -22,31 +22,16 @@ const renderMainBanner = () => {
 
 const setupGame = () => {
   renderMainBanner()
-  const addPlayer = otherPlayersPublicKeys => inquirer.prompt({
-      type: "editor",
-      name: "key",
-      message: "Open vim editor to paste fellow player’s public RSA key",
-    }).then(answers => {
-      const key = rsa.isPublicKey(answers.key) ? answers.key : null
-      const next = key ? {
-        type: "confirm",
-        name: "add",
-        message: "Do you want to add another player?",
-        default: false,
-      } : {
-        type: "confirm",
-        name: "add",
-        message: "That’s not a valid key. Try again?",
-        default: false,
-      }
-      if (key) {
-        otherPlayersPublicKeys.push(rsa.toKeyO(key))
-      }
-      return inquirer.prompt(next)
-    }).then(answers => {
-      return answers.add ? addPlayer(otherPlayersPublicKeys) : otherPlayersPublicKeys
-    })
-  return addPlayer([])
+  return fileSystem.readdir(PLAYERS_FOLDER).then(keyFiles =>
+    Promise.all(keyFiles.map(file =>
+      fileSystem.readFile(PLAYERS_FOLDER + "/" + file).then(content =>
+        ({ name: file, key: rsa.toKeyO(content) }))))
+  ).then(players => inquirer.prompt({
+    type: "checkbox",
+    name: "players",
+    message: "Select players",
+    choices: players.map(p => ({ name: p.name, value: p })),
+  })).then(({ players }) => players)
 }
 
 const displayKey = ownerKeys => {
@@ -114,10 +99,6 @@ const mainMenu = ownerKeys => {
     }).then(answers => {
       if (answers.action === "START") {
         return setupGame()
-          .then(otherPlayerPublicKeys => {
-            return otherPlayerPublicKeys.length === 0 ? 
-              mainMenu(ownerKeys) : otherPlayerPublicKeys
-          })
       } else if (answers.action === "DISPLAY_KEY") {
         return displayKey(ownerKeys)
           .then(() => mainMenu(ownerKeys))
@@ -131,6 +112,10 @@ const mainMenu = ownerKeys => {
     })
 }
 
+const goodBye = () => {
+  console.log("Game finished!")
+}
+
 module.exports = {
-  mainMenu, waiting
+  mainMenu, waiting, goodBye
 }

@@ -1,5 +1,6 @@
-module.exports = {
+module.exports = Object.freeze({
   BROKER_URL: process.env.BROKER || "ws://crypto-yahtzee-broker.herokuapp.com",
   OWNER_KEY_PATH: "/data/keys/yahtzee",
-  PLAYERS_FOLDER: "/data/players"
-}
+  PLAYERS_FOLDER: "/data/players",
+  TRANSPORT_RETRY_INTERVAL_MS: 500,
+})

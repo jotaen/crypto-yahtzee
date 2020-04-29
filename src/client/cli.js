@@ -1,11 +1,11 @@
 const WebSocket = require("ws")
 const { Transport } = require("./transport")
 const { Game } = require("../game")
-const { mainMenu } = require("./menu")
-const { renderScoreCards, handleTurn, printTable, printGoodBye } = require("./game")
+const { mainMenu, waiting, goodBye } = require("./menu")
+const { renderScoreCards, handleTurn, printTable } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
-const { BROKER_URL, OWNER_KEY_PATH } = require("./config")
+const { BROKER_URL, OWNER_KEY_PATH, TRANSPORT_RETRY_INTERVAL_MS } = require("./config")
 
 const establishSocket = transport => {
   try {
@@ -41,19 +41,25 @@ const readOrCreateOwnerKeys = () => fileSystem.stat(OWNER_KEY_PATH)
   .then(keys => toKeyO(keys[0].toString(), keys[1].toString()))
 
 readOrCreateOwnerKeys().then(ownerKeys => {
-  return mainMenu(ownerKeys).then(otherPlayersPublicKeys => {
+  return mainMenu(ownerKeys).then(otherPlayers => {
+    waiting()
+    const otherPlayerKeys = otherPlayers.map(p => p.key)
+    const playerNamesByFinger = otherPlayers.reduce((res, p) => {
+      res[p.key.finger] = p.name
+      return res
+    }, { [ownerKeys.finger]: " YOU " })
     const transport = new Transport(
       ownerKeys,
-      otherPlayersPublicKeys,
-      fn => setTimeout(fn, 200)
+      otherPlayerKeys.length === 0 ? [ownerKeys] : otherPlayerKeys, // Trick to allow playing against oneself,
+      fn => setTimeout(fn, TRANSPORT_RETRY_INTERVAL_MS),
     )
     establishSocket(transport)
-    const game = new Game(ownerKeys, otherPlayersPublicKeys, {
-      onUpdate: renderScoreCards(ownerKeys.finger),
-      onTurn: handleTurn,
-      onViewOthers: printTable,
+    const game = new Game(ownerKeys, otherPlayerKeys, {
+      onUpdate: renderScoreCards(playerNamesByFinger),
+      onTurn: handleTurn(playerNamesByFinger),
+      onViewOthers: printTable(playerNamesByFinger, false),
       onPopulateBlock: block => transport.fanOut(block),
-      onGameEnd: printGoodBye,
+      onGameEnd: goodBye,
     })
     transport.onReceiveMessage(block => game.receiveBlock(block))
   })

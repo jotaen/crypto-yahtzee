@@ -35,12 +35,10 @@ const prettyDices = {
   6: "[6]  ● ● ● ● ● ●",
 }
 
-const renderScoreCards = ownerFinger => yahtzee => {
+const renderScoreCards = playerNamesByFinger => yahtzee => {
   console.clear()
   const points = yahtzee.scorecards.map(s => sum(s))
-  const names = yahtzee.players.map((p, i) => {
-    return p === ownerFinger ? " YOU " : p.substr(0, 5)
-  })
+  const names = yahtzee.players.map(f => playerNamesByFinger[f])
   const SP = chalk.gray(" | ")
   const SN = chalk.gray("-+-")
   const CAT_WIDTH = 15
@@ -54,7 +52,7 @@ const renderScoreCards = ownerFinger => yahtzee => {
   }
 
   console.log(" ".repeat(CAT_WIDTH) + SP + names.map((n, i) => {
-    return yahtzee.onTurn === i ? chalk.bgGreenBright.black(n) : n
+    return yahtzee.onTurn === i ? chalk.bgCyan.black(n) : n
   }).join(SP) + SP)
   console.log(DIVIDER)
   UPPER_SECTION.forEach(printValues(yahtzee.scorecards, prettyCategoryNames))
@@ -107,16 +105,17 @@ const doSelect = (yahtzee) => {
   })
 }
 
-const printTable = yahtzee => {
+const printTable = (playerNamesByFinger, isHighlighted) => yahtzee => {
+  const onTurn = "On Turn: " + playerNamesByFinger[yahtzee.players[yahtzee.onTurn]]
+  console.log(isHighlighted ? chalk.bgGreenBright.black(onTurn) : onTurn)
   console.log("Attempt: " + yahtzee.attempt + " of 3")
   console.log("Dice rolled:")
   yahtzee.dices.forEach(d => console.log(`${prettyDices[d] || "-"}`))
   console.log("")
 }
 
-const handleTurn = (yahtzee, record, select) => {
-  console.log(chalk.bgGreenBright.black("It’s your turn!"))
-  printTable(yahtzee)
+const handleTurn = playerNamesByFinger => (yahtzee, record, select) => {
+  printTable(playerNamesByFinger, true)(yahtzee)
   if (select === null) {
     return doRecord(yahtzee, record)
   }
@@ -147,10 +146,6 @@ const handleTurn = (yahtzee, record, select) => {
   })
 }
 
-const printGoodBye = () => {
-  console.log("Game finished!")
-}
-
 module.exports = {
-  renderScoreCards, handleTurn, printTable, printGoodBye
+  renderScoreCards, handleTurn, printTable
 }
