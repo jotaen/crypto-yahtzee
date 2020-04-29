@@ -3,7 +3,7 @@ const inquirer = require("inquirer")
 const chalk = require("chalk")
 const process = require("process")
 const rsa = require("../crypto/rsa")
-const { PLAYERS_FOLDER } = require("./config")
+const { DATA_DIRECTORY, PLAYERS_FOLDER } = require("./config")
 
 const renderMainBanner = () => {
   console.clear()
@@ -22,9 +22,9 @@ const renderMainBanner = () => {
 
 const setupGame = () => {
   renderMainBanner()
-  return fileSystem.readdir(PLAYERS_FOLDER).then(keyFiles =>
+  return fileSystem.readdir(DATA_DIRECTORY + PLAYERS_FOLDER).then(keyFiles =>
     Promise.all(keyFiles.map(file =>
-      fileSystem.readFile(PLAYERS_FOLDER + "/" + file).then(content =>
+      fileSystem.readFile(DATA_DIRECTORY + PLAYERS_FOLDER + "/" + file).then(content =>
         ({ name: file, key: rsa.toKeyO(content) }))))
   ).then(players => inquirer.prompt({
     type: "checkbox",
@@ -78,7 +78,7 @@ const registerPlayers = () => {
             }
           })
         }
-        return fileSystem.writeFile(PLAYERS_FOLDER + "/" + name, key)
+        return fileSystem.writeFile(DATA_DIRECTORY + PLAYERS_FOLDER + "/" + name, key)
       })
       return addKey()
     })

@@ -5,7 +5,7 @@ const { mainMenu, waiting, goodBye } = require("./menu")
 const { renderScoreCards, handleTurn, printTable } = require("./game")
 const { generateKeyPair, toKeyO } = require("../crypto/rsa")
 const fileSystem = require("fs").promises
-const { BROKER_URL, OWNER_KEY_PATH, TRANSPORT_RETRY_INTERVAL_MS } = require("./config")
+const { BROKER_URL, DATA_DIRECTORY, OWNER_KEY_FOLDER, PLAYERS_FOLDER, TRANSPORT_RETRY_INTERVAL_MS } = require("./config")
 
 const establishSocket = transport => {
   try {
@@ -28,19 +28,30 @@ const establishSocket = transport => {
   }
 }
 
-const readOrCreateOwnerKeys = () => fileSystem.stat(OWNER_KEY_PATH)
-  .catch(() => generateKeyPair()
-    .then(keys => Promise.all([
-      fileSystem.writeFile(OWNER_KEY_PATH + ".pub", keys.publicKey),
-      fileSystem.writeFile(OWNER_KEY_PATH, keys.privateKey),
-    ])))
-  .then(() => Promise.all([
-    fileSystem.readFile(OWNER_KEY_PATH + ".pub"),
-    fileSystem.readFile(OWNER_KEY_PATH),
-  ]))
-  .then(keys => toKeyO(keys[0].toString(), keys[1].toString()))
+const ensureDataFolderStructure = () => Promise.all([
+  fileSystem.mkdir(DATA_DIRECTORY + OWNER_KEY_FOLDER),
+  fileSystem.mkdir(DATA_DIRECTORY + PLAYERS_FOLDER),
+]).catch(e => {
+  if (e.code !== "EEXIST") throw e
+})
 
-readOrCreateOwnerKeys().then(ownerKeys => {
+const readOrCreateOwnerKeys = () => {
+  const privateKeyFile = DATA_DIRECTORY + OWNER_KEY_FOLDER + "yahtzee"
+  const publicKeyFile = privateKeyFile + ".pub"
+  return fileSystem.stat(privateKeyFile)
+    .catch(() => generateKeyPair()
+      .then(keys => Promise.all([
+        fileSystem.writeFile(publicKeyFile, keys.publicKey),
+        fileSystem.writeFile(privateKeyFile, keys.privateKey),
+      ])))
+    .then(() => Promise.all([
+      fileSystem.readFile(publicKeyFile),
+      fileSystem.readFile(privateKeyFile),
+    ]))
+    .then(keys => toKeyO(keys[0].toString(), keys[1].toString()))
+}
+
+ensureDataFolderStructure().then(() => readOrCreateOwnerKeys()).then(ownerKeys => {
   return mainMenu(ownerKeys).then(otherPlayers => {
     waiting()
     const otherPlayerKeys = otherPlayers.map(p => p.key)

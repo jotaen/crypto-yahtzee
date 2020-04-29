@@ -6,14 +6,13 @@ RUN apk add --update bash && rm -rf /var/cache/apk/*
 # Set editor for CLI (entering keys)
 ENV EDITOR vi
 
-# Folder for user’s keys
-RUN mkdir -p /data/keys
-RUN mkdir -p /data/players
-
-# Configure environment
+# Configure app-specific environment
 WORKDIR /app
 ENTRYPOINT ["./run"]
 CMD ["cli"]
+
+# Folder for persisting game data
+RUN mkdir /data
 
 # Install dependencies
 COPY package-lock.json package.json ./
