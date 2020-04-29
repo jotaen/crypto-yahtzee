@@ -15,4 +15,8 @@ cli() {
   node ./src/client/cli.js ${@}
 }
 
+compile() {
+  docker build -t jotaen/crypto-yahtzee .
+}
+
 $1 ${@:2}
