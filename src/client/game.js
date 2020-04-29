@@ -72,7 +72,7 @@ const renderScoreCards = ownerFinger => yahtzee => {
   console.log(DIVIDER)
 }
 
-const doRecord = (yahtzee, record) => {
+const doRecord = (yahtzee) => {
   const potentialScores = count(yahtzee.dices)
   const choices = Object.entries(yahtzee.scorecards[yahtzee.onTurn])
     .filter(e => e[1] === null)
@@ -86,11 +86,11 @@ const doRecord = (yahtzee, record) => {
     message: "Choose a category to score",
     choices: choices
   }).then(answers => {
-    record(answers.category)
+    return { type: "RECORD", value: answers.category }
   })
 }
 
-const doSelect = (yahtzee, select) => {
+const doSelect = (yahtzee) => {
   const choices = yahtzee.dices.map((d, i) => ({ name: prettyDices[d], value: i }))
   return inquirer.prompt({
     type: "checkbox",
@@ -103,7 +103,7 @@ const doSelect = (yahtzee, select) => {
     answers.dicesI.forEach(i => {
       dices[i] = null
     })
-    select(dices)
+    return { type: "SELECT", value: dices }
   })
 }
 
@@ -120,7 +120,7 @@ const handleTurn = (yahtzee, record, select) => {
   if (select === null) {
     return doRecord(yahtzee, record)
   }
-  return inquirer.prompt({
+  const chooseAction = () => inquirer.prompt({
     type: "list",
     name: "action",
     message: "What do you want to do?",
@@ -129,8 +129,21 @@ const handleTurn = (yahtzee, record, select) => {
       { name: "Record score", value: "RECORD" },
     ]
   }).then(answers => {
-    return answers.action === "SELECT" ?
-      doSelect(yahtzee, select) : doRecord(yahtzee, record)
+    const doAction = answers.action === "SELECT" ? doSelect : doRecord
+    return doAction(yahtzee).then(action => {
+      return inquirer.prompt({
+        type: "confirm",
+        name: "sure",
+        message: "Sure?",
+        default: true,
+      }).then(answers => {
+        return answers.sure ? action : chooseAction()
+      })
+    })
+  })
+
+  return chooseAction().then(action => {
+    action.type === "SELECT" ? select(action.value) : record(action.value)
   })
 }
 
