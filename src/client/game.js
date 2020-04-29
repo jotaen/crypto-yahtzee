@@ -95,9 +95,9 @@ const doSelect = (yahtzee, select) => {
   return inquirer.prompt({
     type: "checkbox",
     name: "dicesI",
-    message: "Which dices do you want to roll again?",
+    message: "Which dice do you want to roll again?",
     choices: choices,
-    validate: cs => cs.length > 0 ? true : "Please select one or more dices",
+    validate: cs => cs.length > 0 ? true : "Please select one or more dice",
   }).then(answers => {
     const dices = yahtzee.dices.slice()
     answers.dicesI.forEach(i => {
@@ -109,7 +109,7 @@ const doSelect = (yahtzee, select) => {
 
 const printTable = yahtzee => {
   console.log("Attempt: " + yahtzee.attempt + " of 3")
-  console.log("Dices:")
+  console.log("Dice rolled:")
   yahtzee.dices.forEach(d => console.log(`${prettyDices[d] || "-"}`))
   console.log("")
 }
@@ -125,7 +125,7 @@ const handleTurn = (yahtzee, record, select) => {
     name: "action",
     message: "What do you want to do?",
     choices: [
-      { name: "Select dices you want to roll again", value: "SELECT" },
+      { name: "Select dice you want to roll again", value: "SELECT" },
       { name: "Record score", value: "RECORD" },
     ]
   }).then(answers => {
