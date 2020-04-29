@@ -7,7 +7,7 @@ The dice game [Yahtzee](https://en.wikipedia.org/wiki/Yahtzee) as peer-to-peer i
 The game is played on the command line. Run:
 
 ```
-docker run -it jotaen/crypto-yahtzee
+docker run --rm -it jotaen/crypto-yahtzee
 ```
 
 This will pull the latest version as docker container and start the game right away. You should be able to start playing without further ado. You need Docker (> 19.03.8).
